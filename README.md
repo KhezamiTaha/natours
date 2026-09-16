@@ -1,5 +1,11 @@
 # Natours API
 
+[![Node.js](https://img.shields.io/badge/Node.js-14%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)](https://mongoosejs.com/)
+[![License](https://img.shields.io/badge/license-ISC-blue)](https://opensource.org/license/isc-license-txt/)
+[![GitHub](https://img.shields.io/badge/GitHub-KhezamiTaha%2Fnatours-181717?logo=github&logoColor=white)](https://github.com/KhezamiTaha/natours)
+
 A Node.js and Express.js tour application backed by MongoDB and Mongoose. The project includes a REST API for tours, reusable query features, static tour pages, and development seed data.
 
 ## Features
