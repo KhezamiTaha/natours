@@ -82,15 +82,15 @@ The API base URL is `/api/v1`.
 
 ### Tours
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/tours` | List tours |
-| `POST` | `/tours` | Create a tour |
-| `GET` | `/tours/:id` | Get one tour |
-| `PATCH` | `/tours/:id` | Update a tour |
-| `GET` | `/tours/trending-tours` | List five tours sorted by rating and price |
-| `GET` | `/tours/tours-statistics` | Get statistics grouped by difficulty |
-| `GET` | `/tours/plan-monthly/:year` | Get monthly tour statistics for a year |
+| Method  | Endpoint                    | Description                                |
+| ------- | --------------------------- | ------------------------------------------ |
+| `GET`   | `/tours`                    | List tours                                 |
+| `POST`  | `/tours`                    | Create a tour                              |
+| `GET`   | `/tours/:id`                | Get one tour                               |
+| `PATCH` | `/tours/:id`                | Update a tour                              |
+| `GET`   | `/tours/trending-tours`     | List five tours sorted by rating and price |
+| `GET`   | `/tours/tours-statistics`   | Get statistics grouped by difficulty       |
+| `GET`   | `/tours/plan-monthly/:year` | Get monthly tour statistics for a year     |
 
 Example request:
 
