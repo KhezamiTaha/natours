@@ -6,11 +6,11 @@
   "scripts": {
     "start": "nodemon server.js",
     "debug": "ndb server.js"
-    
   },
   "author": "Khezami.T",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
     "express": "^4.22.2",
     "mongoose": "^5.13.23",
