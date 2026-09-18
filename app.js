@@ -3,6 +3,8 @@ const morgan = require('morgan');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const AppError = require('./utils/appError');
+const errorController = require('./controllers/errorController');
 
 const app = express();
 
@@ -31,25 +33,12 @@ app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
 app.all('*', (req, res, next) => {
-   // res.status(404).json({
-   //    status: 'failed',
-   //    message: `There nothing on thi url : ${req.url}`,
-   // });
-
-   const err = new Error(`There nothing on thi url : ${req.url}`);
-   err.statusCode = 404;
-   err.status=  'failed';
-   next(err);
+   // const err = new Error(`There nothing on thi url : ${req.url}`);
+   // err.statusCode = 404;
+   // err.status=  'failed';
+   next(new AppError(`There nothing on thi url : ${req.url}`, 404));
 });
 
-app.use((err, req, res, next) => {
-   err.statusCode = err.statusCode || 500;
-   err.status = err.status || 'error';
-   res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-   });
-   next();
-});
+app.use(errorController);
 
 module.exports = app;
