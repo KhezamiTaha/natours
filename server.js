@@ -4,6 +4,11 @@ const dotEnv = require('dotenv');
 
 dotEnv.config({ path: './config.env' });
 
+process.on('uncaughtException', (err) => {
+   console.log(err.name);
+   process.exit(1);
+});
+
 const app = require('./app');
 
 const MONGODB_URI = process.env.MONGODB_URI.replace(
@@ -22,8 +27,15 @@ mongoose
       // console.log(connection.connections);
    });
 
-app.listen(7000, () => {
+const server = app.listen(7000, () => {
    console.log('Server is running ...');
+});
+
+process.on('unhandledRejection', (err) => {
+   console.log(err);
+   server.close(() => {
+      process.exit(1);
+   });
 });
 
 // (async function importData() {
