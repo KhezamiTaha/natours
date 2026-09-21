@@ -11,7 +11,9 @@ router.param('id', (req, res, next, value) => {
 });
 
 router.route('/tours-statistics').get(tourController.toursStatistics);
-router.route('/plan-monthly/:year').get(tourController.getPlanMonthly);
+router
+   .route('/plan-monthly/:year')
+   .get(tourController.getPlanMonthly);
 
 router
    .route('/trending-tours')
@@ -25,6 +27,11 @@ router
 router
    .route('/:id')
    .get(tourController.getOneTour)
-   .patch(tourController.updateTour);
+   .patch(tourController.updateTour)
+   .delete(
+      authController.protect,
+      authController.restrictTo('admin', 'lead-guide'),
+      tourController.deleteTour,
+   );
 
 module.exports = router;

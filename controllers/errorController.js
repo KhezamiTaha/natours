@@ -16,11 +16,10 @@ module.exports = function errorController(err, req, res, next) {
             message: 'Sorry, something went wrong.',
          });
       }
-
    } else if (process.env.NODE_ENV == 'developement') {
       res.status(err.statusCode).json({
          status: err.status,
-         message: '🫏🔥 - ' + err.message,
+         message: err.message + ' -  🔥🫏🔥',
          error: err,
          stack: err.stack,
       });
