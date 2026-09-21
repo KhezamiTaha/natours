@@ -92,6 +92,8 @@ The API base URL is `/api/v1`.
 | `GET`   | `/tours/tours-statistics`   | Get statistics grouped by difficulty       |
 | `GET`   | `/tours/plan-monthly/:year` | Get monthly tour statistics for a year     |
 
+The `GET /tours` endpoint requires an `Authorization: Bearer <token>` header.
+
 Example request:
 
 ```bash
@@ -107,9 +109,11 @@ Tour list queries support:
 
 ### Users
 
-User routes are currently scaffolds and return a not-implemented response:
+Authentication and user routes:
 
 - `GET /api/v1/users`
+- `POST /api/v1/users/signup`
+- `POST /api/v1/users/login`
 - `POST /api/v1/users`
 - `GET /api/v1/users/:id`
 - `PATCH /api/v1/users/:id`
