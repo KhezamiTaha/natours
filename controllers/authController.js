@@ -133,15 +133,20 @@ exports.login = catchAsync(async (req, res, next) => {
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
    if (!req.body.email) {
-      return next(new AppError('Please provide your email address.', 400));
+      return next(
+         new AppError('Please provide your email address.', 400),
+      );
    }
 
-   const user = await User.findOne({ email: req.body.email.toLowerCase() });
+   const user = await User.findOne({
+      email: req.body.email.toLowerCase(),
+   });
 
    if (!user) {
       return res.status(200).json({
          status: 'success',
-         message: 'If that email exists, a password reset email was sent.',
+         message:
+            'If that email exists, a password reset email was sent.',
       });
    }
 
@@ -166,20 +171,27 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       user.passwordResetExpires = undefined;
       await user.save({ validateBeforeSave: false });
       return next(
-         new AppError('There was an error sending the email. Try again later.', 500),
+         new AppError(
+            'There was an error sending the email. Try again later.',
+            500,
+         ),
       );
    }
 
    res.status(200).json({
       status: 'success',
-      message: 'If that email exists, a password reset email was sent.',
+      message:
+         'If that email exists, a password reset email was sent.',
    });
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
    if (!req.body.password || !req.body.passwordConfirm) {
       return next(
-         new AppError('Please provide password and passwordConfirm.', 400),
+         new AppError(
+            'Please provide password and passwordConfirm.',
+            400,
+         ),
       );
    }
 
@@ -194,7 +206,9 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
    }).select('+passwordResetToken +passwordResetExpires');
 
    if (!user) {
-      return next(new AppError('Token is invalid or has expired', 400));
+      return next(
+         new AppError('Token is invalid or has expired', 400),
+      );
    }
 
    user.password = req.body.password;
