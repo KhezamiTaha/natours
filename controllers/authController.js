@@ -11,11 +11,54 @@ const signToken = (id) =>
       expiresIn: process.env.JWT_EXPIRES_IN,
    });
 
+const getCookieMaxAge = () => {
+   const value = process.env.JWT_COOKIE_EXPIRES_IN || '90d';
+   const amount = Number.parseInt(value, 10);
+
+   if (value.endsWith('d')) return amount * 24 * 60 * 60 * 1000;
+   if (value.endsWith('h')) return amount * 60 * 60 * 1000;
+   if (value.endsWith('m')) return amount * 60 * 1000;
+   return amount * 1000;
+};
+
+const createSendToken = (
+   user,
+   statusCode,
+   res,
+   includeUser = true,
+) => {
+   const token = signToken(user._id);
+   user.password = undefined;
+
+   res.cookie('jwt', token, {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === 'production',
+      secure: true,
+      sameSite: 'strict',
+      maxAge: getCookieMaxAge(),
+   });
+
+   const response = {
+      status: 'success',
+      token,
+   };
+
+   if (includeUser) {
+      response.data = { user };
+   }
+
+   res.status(statusCode).json(response);
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
-   let token;
+   let token = req.cookies.jwt;
    const authorization = req.headers.authorization;
 
-   if (authorization && authorization.startsWith('Bearer ')) {
+   if (
+      !token &&
+      authorization &&
+      authorization.startsWith('Bearer ')
+   ) {
       token = authorization.split(' ')[1];
    }
 
@@ -40,7 +83,9 @@ exports.protect = catchAsync(async (req, res, next) => {
       );
    }
 
-   const currentUser = await User.findById(decoded.id);
+   const currentUser = await User.findById(decoded.id).select(
+      '+passwordChangedAt +active',
+   );
 
    if (!currentUser) {
       return next(
@@ -49,6 +94,10 @@ exports.protect = catchAsync(async (req, res, next) => {
             401,
          ),
       );
+   }
+
+   if (!currentUser.active) {
+      return next(new AppError('This account is deactivated.', 401));
    }
 
    if (currentUser.changedPasswordAfter(decoded.iat)) {
@@ -89,16 +138,8 @@ exports.signup = catchAsync((req, res, next) => {
       passwordConfirm,
       role,
    }).then((newUser) => {
-      const token = signToken(newUser._id);
       newUser.password = undefined;
-
-      res.status(201).json({
-         status: 'success',
-         token,
-         data: {
-            user: newUser,
-         },
-      });
+      createSendToken(newUser, 201, res);
    });
 });
 
@@ -113,22 +154,49 @@ exports.login = catchAsync(async (req, res, next) => {
 
    const user = await User.findOne({
       email: email.toLowerCase(),
+      active: true,
    }).select('+password');
 
    if (!user || !(await bcrypt.compare(password, user.password))) {
       return next(new AppError('Incorrect email or password', 401));
    }
 
-   const token = signToken(user._id);
    user.password = undefined;
+   createSendToken(user, 200, res);
+});
 
-   res.status(200).json({
-      status: 'success',
-      token,
-      data: {
-         user,
-      },
-   });
+exports.updatePassword = catchAsync(async (req, res, next) => {
+   const { currentPassword, password, passwordConfirm } = req.body;
+
+   if (!currentPassword || !password || !passwordConfirm) {
+      return next(
+         new AppError(
+            'Please provide currentPassword, password, and passwordConfirm.',
+            400,
+         ),
+      );
+   }
+
+   if (password !== passwordConfirm) {
+      return next(new AppError('Passwords are not the same.', 400));
+   }
+
+   const user = await User.findById(req.user._id).select('+password');
+
+   if (
+      !user ||
+      !(await bcrypt.compare(currentPassword, user.password))
+   ) {
+      return next(
+         new AppError('Your current password is incorrect.', 401),
+      );
+   }
+
+   user.password = password;
+   user.passwordConfirm = passwordConfirm;
+   await user.save();
+
+   createSendToken(user, 200, res, false);
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
@@ -195,6 +263,10 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
       );
    }
 
+   if (req.body.password !== req.body.passwordConfirm) {
+      return next(new AppError('Passwords are not the same.', 400));
+   }
+
    const hashedToken = crypto
       .createHash('sha256')
       .update(req.params.token)
@@ -217,10 +289,5 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
    user.passwordResetExpires = undefined;
    await user.save();
 
-   const token = signToken(user._id);
-
-   res.status(200).json({
-      status: 'success',
-      token,
-   });
+   createSendToken(user, 200, res, false);
 });
