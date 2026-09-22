@@ -1,19 +1,25 @@
 const express = require('express');
 const morgan = require('morgan');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const AppError = require('./utils/appError');
 const errorController = require('./controllers/errorController');
+const { globalLimiter } = require('./utils/rateLimiter');
 
 const app = express();
 
 // Middlewares
 
-if (process.env.NODE_ENV == 'dev') {
+if (process.env.NODE_ENV == 'developement') {
    app.use(morgan('dev'));
 }
+app.use(helmet());
 app.use(express.json());
+app.use(cookieParser());
+app.use('/api', globalLimiter);
 
 // middleware for static files
 
