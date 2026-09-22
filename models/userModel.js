@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
       enum: ['user', 'guide', 'lead-guide', 'admin'],
       default: 'user',
    },
+   active: {
+      type: Boolean,
+      default: true,
+      select: false,
+   },
    photo: {
       type: String,
       default: 'default.jpg',
@@ -40,7 +45,10 @@ const userSchema = new mongoose.Schema({
          message: 'Passwords are not the same',
       },
    },
-   passwordChangedAt: Date,
+   passwordChangedAt: {
+      type: Date,
+      select: false,
+   },
    passwordResetToken: {
       type: String,
       select: false,
@@ -51,13 +59,17 @@ const userSchema = new mongoose.Schema({
    },
 });
 
+userSchema.set('versionKey', false);
+
 userSchema.pre('save', function (next) {
-   if (!this.isModified('password') || this.isNew) {
+   if (!this.isModified('password')) {
       this.passwordConfirm = undefined;
       return next();
    }
 
-   this.passwordChangedAt = Date.now() - 1000;
+   if (!this.isNew) {
+      this.passwordChangedAt = Date.now() - 1000;
+   }
 
    bcrypt
       .hash(this.password, 12)
