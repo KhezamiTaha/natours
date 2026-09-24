@@ -57,7 +57,7 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getOneTour = catchAsync(async (req, res, next) => {
-   const tour = await Tour.findById(req.params.id);
+   const tour = await Tour.findById(req.params.id).populate('guides');
 
    if (!tour) {
       return next(
@@ -93,7 +93,7 @@ exports.updateTour = catchAsync(async (req, res, next) => {
          new: true,
          runValidators: true,
       },
-   );
+   ).populate('guides');
    res.status(201).json({
       status: 'success',
       data: {
