@@ -25,13 +25,20 @@ const tourSchema = new mongoose.Schema(
          type: Number,
          required: [true, 'A tour must have a group size'],
       },
+      guides: [
+         {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+         },
+      ],
       difficulty: {
          type: String,
          required: [true, 'A Tour must have a Difficulty'],
          enum: {
-            values : ['easy', 'medium', 'difficult'],
-            message: 'A difficulty must be easy, medium or difficult!'
-         }
+            values: ['easy', 'medium', 'difficult'],
+            message:
+               'A difficulty must be easy, medium or difficult!',
+         },
       },
       ratingsAverage: {
          type: Number,
@@ -44,11 +51,12 @@ const tourSchema = new mongoose.Schema(
       priceDiscount: {
          type: Number,
          validate: {
-            validator: function (value){
-               return value < this.price
+            validator: function (value) {
+               return value < this.price;
             },
-            message: 'The price Discount {VALUE} must be less than the Price'
-         }
+            message:
+               'The price Discount {VALUE} must be less than the Price',
+         },
       },
       summary: {
          type: String,
@@ -71,6 +79,27 @@ const tourSchema = new mongoose.Schema(
          default: Date.now(),
          select: false,
       },
+      startLocation: {
+         description: String,
+         type: {
+            type: String,
+            enum: ['Point'],
+         },
+         coordinates: [Number],
+         address: String,
+      },
+      locations: [
+         {
+            description: String,
+            type: {
+               type: String,
+               enum: ['Point'],
+            },
+            coordinates: [Number],
+            address: String,
+            day: Number,
+         },
+      ],
       startDates: [Date],
       secretTour: {
          type: Boolean,
@@ -110,7 +139,7 @@ tourSchema.pre('aggregate', function (next) {
          secretTour: { $ne: true },
       },
    });
-   next()
+   next();
 });
 
 const Tour = mongoose.model('Tour', tourSchema);
