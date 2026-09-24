@@ -1,10 +1,14 @@
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
 const errorController = require('./controllers/errorController');
 const { globalLimiter } = require('./utils/rateLimiter');
@@ -18,6 +22,9 @@ if (process.env.NODE_ENV == 'developement') {
 }
 app.use(helmet());
 app.use(express.json());
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 app.use(cookieParser());
 app.use('/api', globalLimiter);
 
@@ -38,6 +45,7 @@ app.use((req, res, next) => {
 
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 app.all('*', (req, res, next) => {
    // const err = new Error(`There nothing on thi url : ${req.url}`);
