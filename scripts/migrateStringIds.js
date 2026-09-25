@@ -35,7 +35,7 @@ const prepareUsers = (users) =>
 
 const prepareTours = (tours) =>
    tours.map((tour) => ({
-   ...tour,
+      ...tour,
       _id: convertId(tour._id),
       guides: tour.guides.map(convertId),
       startDates: tour.startDates.map((date) => new Date(date)),
@@ -53,7 +53,11 @@ const prepareReviews = (reviews) =>
       tour: convertId(review.tour),
    }));
 
-const replaceCollection = async (database, collectionName, documents) => {
+const replaceCollection = async (
+   database,
+   collectionName,
+   documents,
+) => {
    const collection = database.collection(collectionName);
    await collection.deleteMany({});
    await collection.insertMany(documents);
