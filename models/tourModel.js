@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const Review = require('./reviewModel');
 
 const tourSchema = new mongoose.Schema(
    {
@@ -116,6 +117,12 @@ tourSchema.virtual('durationPerWeek').get(function () {
    return this.duration / 7;
 });
 
+tourSchema.virtual('reviews', {
+   ref: "Review",
+   localField: "_id",
+   foreignField: 'tour'
+})
+
 // Document Middleware aka 9bal w mba3d
 tourSchema.pre('save', function (next) {
    this.slug = slugify(this.name, { lower: true });
@@ -132,6 +139,15 @@ tourSchema.pre(/^find/, function (next) {
    this.find({ secretTour: { $ne: true } });
    next();
 });
+
+// tourSchema.pre(/^find/, function (next) {
+//    this.populate({path: 'reviews',
+//       populate: {
+//          path: 'user',
+//       }
+//    });
+//    next();
+// });
 
 tourSchema.pre('aggregate', function (next) {
    this.pipeline().unshift({
