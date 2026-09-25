@@ -57,7 +57,14 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getOneTour = catchAsync(async (req, res, next) => {
-   const tour = await Tour.findById(req.params.id).populate('guides');
+   const tour = await Tour.findById(req.params.id)
+      .populate('guides')
+      .populate({
+         path: 'reviews',
+         populate: {
+            path: 'user',
+         },
+      });
 
    if (!tour) {
       return next(
