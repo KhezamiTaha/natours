@@ -1,10 +1,40 @@
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const ApiFeatures = require('../utils/apiFeatures');
 
 /// Users function handling routes
+exports.getMe = catchAsync(async (req, res, next) => {
+   const user = await User.findById(req.user._id);
+
+   if (!user) {
+      return next(
+         new AppError(
+            'The authenticated user no longer exists.',
+            404,
+         ),
+      );
+   }
+
+   res.status(200).json({
+      status: 'success',
+      data: {
+         user,
+      },
+   });
+});
+
 exports.getAllUsers = catchAsync(async (req, res) => {
-   const users = await User.find({ active: { $ne: false } });
+   const feature = new ApiFeatures(
+      User.find({ active: { $ne: false } }),
+      req.query,
+   )
+      .filter()
+      .sort()
+      .fieldLimiting()
+      .paginate();
+
+   const users = await feature.query;
 
    res.status(200).json({
       status: 'success',
@@ -68,27 +98,94 @@ exports.deleteMe = catchAsync(async (req, res) => {
    });
 });
 
-exports.createUser = (req, res) => {
-   res.status(500).json({
-      status: 'error',
-      message: 'This endpoint is not yet implemented...',
+exports.createUser = catchAsync(async (req, res) => {
+   const user = await User.create(req.body);
+   user.password = undefined;
+
+   res.status(201).json({
+      status: 'success',
+      data: {
+         user,
+      },
    });
-};
-exports.getUser = (req, res) => {
-   res.status(500).json({
-      status: 'error',
-      message: 'This endpoint is not yet implemented...',
+});
+exports.getUser = catchAsync(async (req, res, next) => {
+   const user = await User.findById(req.params.id).select('+active');
+
+   if (!user) {
+      return next(
+         new AppError(
+            `There is no user with id: ${req.params.id}`,
+            404,
+         ),
+      );
+   }
+
+   res.status(200).json({
+      status: 'success',
+      data: {
+         user,
+      },
    });
-};
-exports.updateUser = (req, res) => {
-   res.status(500).json({
-      status: 'error',
-      message: 'This endpoint is not yet implemented...',
+});
+exports.updateUser = catchAsync(async (req, res, next) => {
+   const allowedFields = ['name', 'email', 'role', 'photo', 'active'];
+   const invalidFields = Object.keys(req.body).filter(
+      (field) => !allowedFields.includes(field),
+   );
+
+   if (invalidFields.length > 0) {
+      return next(
+         new AppError(
+            `Invalid fields: ${invalidFields.join(', ')}`,
+            400,
+         ),
+      );
+   }
+
+   const user = await User.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+         new: true,
+         runValidators: true,
+      },
+   ).select('+active');
+
+   if (!user) {
+      return next(
+         new AppError(
+            `There is no user with id: ${req.params.id}`,
+            404,
+         ),
+      );
+   }
+
+   res.status(200).json({
+      status: 'success',
+      data: {
+         user,
+      },
    });
-};
-exports.deleteUser = (req, res) => {
-   res.status(500).json({
-      status: 'error',
-      message: 'This endpoint is not yet implemented...',
+});
+exports.deleteUser = catchAsync(async (req, res, next) => {
+   const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { active: false },
+      { new: true },
+   ).select('+active');
+
+   if (!user) {
+      return next(
+         new AppError(
+            `There is no user with id: ${req.params.id}`,
+            404,
+         ),
+      );
+   }
+
+   res.status(204).json({
+      status: 'success',
+      data: null,
    });
-};
+});
