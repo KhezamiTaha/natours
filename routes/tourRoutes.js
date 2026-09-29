@@ -23,14 +23,30 @@ router
    .get(tourController.getTrendingTours, tourController.getAllTours);
 
 router
+   .route('/getDistances/:latlng/unit/:unit')
+   .get(tourController.getDistances);
+
+router
+   .route('/tours-within/:distance/center/:latlng/unit/:unit')
+   .get(tourController.getToursWithin);
+
+router
    .route('/')
-   .get(authController.protect, tourController.getAllTours)
-   .post(tourController.checkBody, tourController.createTour);
+   .get(tourController.getAllTours)
+   .post(
+      authController.protect,
+      authController.restrictTo('admin', 'lead-guide'),
+      tourController.createTour,
+   );
 
 router
    .route('/:id')
    .get(tourController.getOneTour)
-   .patch(tourController.updateTour)
+   .patch(
+      authController.protect,
+      authController.restrictTo('admin', 'lead-guide'),
+      tourController.updateTour,
+   )
    .delete(
       authController.protect,
       authController.restrictTo('admin', 'lead-guide'),

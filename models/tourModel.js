@@ -113,19 +113,68 @@ const tourSchema = new mongoose.Schema(
    },
 );
 
+tourSchema.index('price');
+tourSchema.index('slug');
+tourSchema.index({ startLocation: '2dsphere' });
+
 tourSchema.virtual('durationPerWeek').get(function () {
    return this.duration / 7;
 });
 
 tourSchema.virtual('reviews', {
-   ref: "Review",
-   localField: "_id",
-   foreignField: 'tour'
-})
+   ref: 'Review',
+   localField: '_id',
+   foreignField: 'tour',
+});
+
+tourSchema.statics.recalculateRatings = async function (tourId) {
+   const [stats] = await Review.aggregate([
+      { $match: { tour: new mongoose.Types.ObjectId(tourId) } },
+      {
+         $group: {
+            _id: '$tour',
+            ratingsQuantity: { $sum: 1 },
+            ratingsAverage: { $avg: '$rating' },
+         },
+      },
+   ]);
+
+   await this.updateOne(
+      { _id: tourId },
+      {
+         $set: {
+            ratingsAverage: stats
+               ? Number(stats.ratingsAverage.toFixed(1))
+               : 0,
+            ratingsQuantity: stats ? stats.ratingsQuantity : 0,
+         },
+      },
+   );
+};
 
 // Document Middleware aka 9bal w mba3d
 tourSchema.pre('save', function (next) {
    this.slug = slugify(this.name, { lower: true });
+   next();
+});
+
+tourSchema.pre('findOneAndUpdate', function (next) {
+   const update = this.getUpdate();
+   const updatedName =
+      update.name || (update.$set && update.$set.name);
+
+   if (typeof updatedName === 'string') {
+      const slug = slugify(updatedName, { lower: true });
+
+      if (update.$set) {
+         update.$set.slug = slug;
+      } else {
+         update.slug = slug;
+      }
+
+      this.setUpdate(update);
+   }
+
    next();
 });
 
@@ -150,11 +199,22 @@ tourSchema.pre(/^find/, function (next) {
 // });
 
 tourSchema.pre('aggregate', function (next) {
-   this.pipeline().unshift({
-      $match: {
+   const pipeline = this.pipeline();
+   const geoNearStage = pipeline[0] && pipeline[0].$geoNear;
+
+   if (geoNearStage) {
+      geoNearStage.query = {
+         ...geoNearStage.query,
          secretTour: { $ne: true },
-      },
-   });
+      };
+   } else {
+      pipeline.unshift({
+         $match: {
+            secretTour: { $ne: true },
+         },
+      });
+   }
+
    next();
 });
 

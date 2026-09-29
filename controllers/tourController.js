@@ -4,6 +4,38 @@ const ApiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
+const parseLatLng = (latlng) => {
+   const coordinates = latlng.split(',');
+
+   if (
+      coordinates.length !== 2 ||
+      coordinates.some((coordinate) => coordinate.trim() === '')
+   ) {
+      throw new AppError(
+         'latlng must contain latitude and longitude separated by a comma.',
+         400,
+      );
+   }
+
+   const [latitude, longitude] = coordinates.map(Number);
+
+   if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+   ) {
+      throw new AppError(
+         'latlng must contain valid latitude and longitude.',
+         400,
+      );
+   }
+
+   return [longitude, latitude];
+};
+
 // const tours = JSON.parse(
 //    fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
 // );
@@ -36,6 +68,78 @@ exports.getTrendingTours = (req, res, next) => {
    req.query.limit = '5';
    next();
 };
+
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+   const distance = Number(req.params.distance);
+   const unit = req.params.unit.toLowerCase();
+   const [longitude, latitude] = parseLatLng(req.params.latlng);
+
+   if (!Number.isFinite(distance) || distance <= 0) {
+      return next(
+         new AppError('Distance must be a positive number.', 400),
+      );
+   }
+
+   if (!['km', 'mile'].includes(unit)) {
+      return next(
+         new AppError('Unit must be either "km" or "mile".', 400),
+      );
+   }
+
+   const earthRadius = unit === 'mile' ? 3963.2 : 6378.1;
+   const radius = distance / earthRadius;
+   const tours = await Tour.find({
+      startLocation: {
+         $geoWithin: {
+            $centerSphere: [[longitude, latitude], radius],
+         },
+      },
+   });
+
+   res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+         tours,
+      },
+   });
+});
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+   const unit = req.params.unit.toLowerCase();
+
+   if (!['km', 'mile'].includes(unit)) {
+      return next(
+         new AppError('Unit must be either "km" or "mile".', 400),
+      );
+   }
+
+   const [longitude, latitude] = parseLatLng(req.params.latlng);
+   const distanceMultiplier = unit === 'km' ? 0.001 : 1 / 1609.344;
+   const tours = await Tour.aggregate([
+      {
+         $geoNear: {
+            near: {
+               type: 'Point',
+               coordinates: [longitude, latitude],
+            },
+            key: 'startLocation',
+            distanceField: 'distance',
+            distanceMultiplier,
+            spherical: true,
+         },
+      },
+   ]);
+
+   res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      unit,
+      data: {
+         tours,
+      },
+   });
+});
 
 // Routes handling functions
 exports.getAllTours = catchAsync(async (req, res, next) => {
