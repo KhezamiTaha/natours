@@ -1,0 +1,85 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title Natours | #{title || 'Exciting tours for adventurous people'}
+
+  body
+    header.header
+      nav.nav.nav--tours
+        a.nav__el(href='/') All tours
+        form.nav__search
+          button.nav__search-btn
+            svg
+              use(xlink:href='/img/icons.svg#icon-search')
+          input.nav__search-input(type='text', placeholder='Search tours')
+      a.header__logo(href='/', aria-label='Natours home')
+        img(src='/img/logo-white.png', alt='Natours logo')
+      nav.nav.nav--user
+        a.nav__el(href='#') My bookings
+        a.nav__el.nav__el--profile(href='#')
+          img.nav__user-img(src='/img/user.jpg', alt='User photo')
+          span.nav__user-name Taha
+
+        //- button.nav__el Log in
+        //- button.nav__el.nav__el--cta Sign up
+
+    main.main
+      .card-container
+        each tour in tours
+          .card
+            .card__header
+              a.card__picture-link(href=`/tour/${tour.slug}`, aria-label=`View ${tour.name}`)
+                .card__picture
+                  .card__picture-overlay &nbsp;
+                  img.card__picture-img(src=`/img/tours/${tour.imageCover}`, alt=`${tour.name}`)
+              h3.heading-tertirary
+                a.card__title-link(href=`/tour/${tour.slug}`)
+                  span= tour.name
+
+            .card__details
+              h4.card__sub-heading= `${tour.difficulty} ${tour.duration}-day tour`
+              p.card__text= tour.summary
+              .card__data
+                svg.card__icon
+                  use(xlink:href='/img/icons.svg#icon-map-pin')
+                span= tour.startLocation && tour.startLocation.description ? tour.startLocation.description : 'Tunisia'
+              .card__data
+                svg.card__icon
+                  use(xlink:href='/img/icons.svg#icon-calendar')
+                span= tour.startDates && tour.startDates.length ? new Date(tour.startDates[0]).toLocaleString('en-us', { month: 'long', year: 'numeric' }) : 'Date TBA'
+              .card__data
+                svg.card__icon
+                  use(xlink:href='/img/icons.svg#icon-flag')
+                span= `${tour.locations ? tour.locations.length : 0} stops`
+              .card__data
+                svg.card__icon
+                  use(xlink:href='/img/icons.svg#icon-user')
+                span= `${tour.maxGroupSize} people`
+
+            .card__footer
+              p.card__price
+                span.card__price-amount= tour.price.toLocaleString()
+                span.card__price-currency TND
+                span.card__price-text / person
+              p.card__ratings(aria-label=`${tour.ratingsAverage} out of 5 from ${tour.ratingsQuantity} ratings`)
+                svg.card__rating-star(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-star')
+                span.card__rating-score= tour.ratingsAverage
+                span.card__rating-count= `${tour.ratingsQuantity} ratings`
+              a.btn.btn--green.btn--small(href=`/tour/${tour.slug}`) Details
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='Natours logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
