@@ -28,6 +28,11 @@ const reviewSchema = new mongoose.Schema({
    },
 });
 
+reviewSchema.index(
+   { tour: 1, user: 1 },
+   { unique: true, name: 'unique_review_per_user_per_tour' },
+);
+
 const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = Review;
