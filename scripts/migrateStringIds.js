@@ -1,12 +1,13 @@
 const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 
 const User = require('../models/userModel');
 const Tour = require('../models/tourModel');
 const Review = require('../models/reviewModel');
 
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: path.resolve(__dirname, '../config.env') });
 
 const readJson = (fileName) =>
    JSON.parse(
@@ -100,7 +101,10 @@ const migrate = async () => {
       );
    }
 
-   await mongoose.connect(getMongoUri());
+   await mongoose.connect(getMongoUri(), {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+   });
    const database = mongoose.connection.db;
 
    const users = prepareUsers(readJson('users.json'));
