@@ -20,7 +20,7 @@ const setButtonLoading = (button, isLoading, label) => {
    } else {
       button.removeAttribute('aria-label');
    }
-}; 
+};
 
 const handleSubmit = async (event) => {
    event.preventDefault();
