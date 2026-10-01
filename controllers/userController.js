@@ -2,6 +2,15 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const ApiFeatures = require('../utils/apiFeatures');
+const crypto = require('crypto');
+const fs = require('fs').promises;
+const path = require('path');
+const sharp = require('sharp');
+
+const userImageDirectory = path.join(
+   __dirname,
+   '../public/img/users',
+);
 
 /// Users function handling routes
 exports.getMe = catchAsync(async (req, res, next) => {
@@ -78,6 +87,98 @@ exports.updateMe = catchAsync(async (req, res, next) => {
          runValidators: true,
       },
    );
+   const userResponse = updatedUser.toObject();
+   delete userResponse.__v;
+
+   res.status(200).json({
+      status: 'success',
+      data: {
+         user: userResponse,
+      },
+   });
+});
+
+exports.updateMyPhoto = catchAsync(async (req, res, next) => {
+   if (!req.file) {
+      return next(
+         new AppError('Choose a profile image to upload.', 400),
+      );
+   }
+
+   const supportedFormats = {
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+   };
+   let metadata;
+   let photoBuffer;
+
+   try {
+      metadata = await sharp(req.file.buffer, {
+         limitInputPixels: 16_000_000,
+      }).metadata();
+
+      if (
+         !supportedFormats[metadata.format] ||
+         req.file.mimetype !== supportedFormats[metadata.format] ||
+         (metadata.pages && metadata.pages > 1)
+      ) {
+         return next(
+            new AppError(
+               'Use a non-animated JPEG, PNG, or WebP image.',
+               400,
+            ),
+         );
+      }
+
+      photoBuffer = await sharp(req.file.buffer, {
+         limitInputPixels: 16_000_000,
+      })
+         .rotate()
+         .resize(512, 512, { fit: 'cover' })
+         .webp({ quality: 85 })
+         .toBuffer();
+   } catch (error) {
+      return next(
+         new AppError(
+            'That image could not be processed. Choose another image.',
+            400,
+         ),
+      );
+   }
+
+   const filename = `avatar-${crypto.randomUUID()}.webp`;
+   const filePath = path.join(userImageDirectory, filename);
+   await fs.mkdir(userImageDirectory, { recursive: true });
+   await fs.writeFile(filePath, photoBuffer, { flag: 'wx' });
+
+   let updatedUser;
+   try {
+      updatedUser = await User.findByIdAndUpdate(
+         req.user._id,
+         { photo: filename },
+         { new: true },
+      );
+
+      if (!updatedUser) {
+         throw new AppError(
+            'The authenticated user no longer exists.',
+            404,
+         );
+      }
+   } catch (error) {
+      await fs.unlink(filePath).catch(() => {});
+      return next(error);
+   }
+
+   if (/^avatar-[0-9a-f-]{36}\.webp$/i.test(req.user.photo)) {
+      const previousPhotoPath = path.join(
+         userImageDirectory,
+         req.user.photo,
+      );
+      await fs.unlink(previousPhotoPath).catch(() => {});
+   }
+
    const userResponse = updatedUser.toObject();
    delete userResponse.__v;
 

@@ -32,9 +32,9 @@ const createSendToken = (
 
    res.cookie('jwt', token, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
+      path: '/',
       maxAge: getCookieMaxAge(),
    });
 
@@ -49,6 +49,50 @@ const createSendToken = (
 
    res.status(statusCode).json(response);
 };
+
+exports.logout = (req, res) => {
+   const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+   };
+
+   res.clearCookie('jwt', { ...cookieOptions, path: '/' });
+   res.clearCookie('jwt', {
+      ...cookieOptions,
+      path: '/api/v1/users',
+   });
+
+   res.status(200).json({ status: 'success' });
+};
+
+exports.isLoggedIn = catchAsync(async (req, res, next) => {
+   res.locals.currentUser = null;
+   const token = req.cookies.jwt;
+
+   if (!token) return next();
+
+   let decoded;
+   try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+   } catch (error) {
+      return next();
+   }
+
+   const currentUser = await User.findById(decoded.id).select(
+      '+passwordChangedAt +active',
+   );
+
+   if (
+      currentUser &&
+      currentUser.active &&
+      !currentUser.changedPasswordAfter(decoded.iat)
+   ) {
+      res.locals.currentUser = currentUser;
+   }
+
+   next();
+});
 
 exports.protect = catchAsync(async (req, res, next) => {
    let token = req.cookies.jwt;

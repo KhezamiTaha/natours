@@ -2,16 +2,24 @@ const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 const { authLimiter } = require('../utils/rateLimiter');
+const uploadUserPhoto = require('../utils/uploadUserPhoto');
 
 const router = express.Router();
 
 router.post('/signup', authLimiter, authController.signup);
 router.post('/login', authLimiter, authController.login);
+router.post('/logout', authController.logout);
 router.get('/me', authController.protect, userController.getMe);
 router.patch(
    '/updatePassword',
    authController.protect,
    authController.updatePassword,
+);
+router.patch(
+   '/updateMe/photo',
+   authController.protect,
+   uploadUserPhoto,
+   userController.updateMyPhoto,
 );
 router.patch(
    '/updateMe',

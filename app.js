@@ -25,7 +25,29 @@ app.set('view engine', 'pug');
 if (process.env.NODE_ENV == 'developement') {
    app.use(morgan('dev'));
 }
-app.use(helmet());
+app.use(
+   helmet({
+      contentSecurityPolicy: {
+         directives: {
+            scriptSrc: ["'self'", 'https://api.mapbox.com'],
+            styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+            connectSrc: [
+               "'self'",
+               'https://api.mapbox.com',
+               'https://events.mapbox.com',
+            ],
+            imgSrc: [
+               "'self'",
+               'data:',
+               'blob:',
+               'https://api.mapbox.com',
+            ],
+            workerSrc: ["'self'", 'blob:'],
+            childSrc: ["'self'", 'blob:'],
+         },
+      },
+   }),
+);
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(xss());
@@ -35,6 +57,12 @@ app.use('/api', globalLimiter);
 
 // middleware for static files
 
+app.use(
+   '/vendor/cropperjs',
+   express.static(
+      path.join(__dirname, 'node_modules/cropperjs/dist'),
+   ),
+);
 app.use(express.static(`${__dirname}/public`));
 
 app.use((req, res, next) => {
@@ -54,10 +82,9 @@ app.use('/api/v1/reviews', reviewRouter);
 app.use('/', viewRouter);
 
 app.all('*', (req, res, next) => {
-   // const err = new Error(`There nothing on thi url : ${req.url}`);
-   // err.statusCode = 404;
-   // err.status=  'failed';
-   next(new AppError(`There nothing on thi url : ${req.url}`, 404));
+   next(
+      new AppError('We could not find the page you requested.', 404),
+   );
 });
 
 app.use(errorController);
