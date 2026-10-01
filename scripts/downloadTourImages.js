@@ -172,7 +172,9 @@ const requestImage = (imageUrl, redirectCount = 0) =>
          parsedUrl.protocol === 'https:' ? https : http;
       const request = requestModule.get(
          parsedUrl,
-         { headers: { 'User-Agent': 'Natours image downloader' } },
+         {
+            headers: { 'User-Agent': 'CarthageWay image downloader' },
+         },
          (response) => {
             const redirectUrl = response.headers.location;
 

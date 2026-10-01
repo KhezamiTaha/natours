@@ -1,4 +1,4 @@
-# Natours API & Production Security Blueprint
+# CarthageWay API & Production Security Blueprint
 
 [![Node.js](https://img.shields.io/badge/Node.js-14%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
@@ -53,7 +53,7 @@ A tour booking RESTful API built with **Node.js, Express, MongoDB, and Mongoose*
 
 ## 1. Architectural Overview & Request Lifecycle
 
-When a client sends an HTTP request to Natours, the request must traverse an ordered series of security filters and middlewares before hitting the application controllers:
+When a client sends an HTTP request to CarthageWay, the request must traverse an ordered series of security filters and middlewares before hitting the application controllers:
 
 ```mermaid
 flowchart TD
@@ -96,7 +96,7 @@ flowchart TD
 
 ## 2. Security Hardening Stack (Defense-in-Depth)
 
-Every layer of defense in Natours addresses a specific attack vector from the **OWASP Top 10 API Security Risks**.
+Every layer of defense in CarthageWay addresses a specific attack vector from the **OWASP Top 10 API Security Risks**.
 
 | Package                  | Version     | Layer              | Primary Attack Vector Mitigated                              |
 | :----------------------- | :---------- | :----------------- | :----------------------------------------------------------- |
@@ -157,7 +157,7 @@ app.use('/api', globalLimiter);
 
 ### Layer 2: Dual-Tier Rate Limiting (`express-rate-limit`)
 
-Natours employs a **two-tier rate limiting strategy** defined in [utils/rateLimiter.js](file:///c:/Users/kheza_jks33el/Downloads/complete-node-bootcamp-master/complete-node-bootcamp-master/4-natours/natours/utils/rateLimiter.js):
+CarthageWay employs a **two-tier rate limiting strategy** defined in [utils/rateLimiter.js](file:///c:/Users/kheza_jks33el/Downloads/complete-node-bootcamp-master/complete-node-bootcamp-master/4-natours/natours/utils/rateLimiter.js):
 
 ```javascript
 // utils/rateLimiter.js
@@ -286,7 +286,7 @@ res.cookie('jwt', token, {
 
 In production, leaking internal database stack traces or database driver errors gives attackers insight into collection structures, system file paths, and package versions.
 
-Natours separates all errors into two categories:
+CarthageWay separates all errors into two categories:
 
 1. **Operational Errors (`isOperational = true`)**: Known, predictable business logic errors created using `AppError` (e.g. "User does not exist", "Invalid password", "Token expired"). These are safe to display to the user.
 2. **Programming / Unknown Errors**: Bugs, database connectivity crashes, syntax errors. In production, these return a generic message: `"Sorry, something went wrong."`
@@ -465,7 +465,7 @@ userSchema.pre('save', function (next) {
 
 ### Stateless JWT Dual-Token Transmission (Cookie + Bearer)
 
-Natours supports both modern browser clients and mobile/third-party API consumers through **dual-token handling**:
+CarthageWay supports both modern browser clients and mobile/third-party API consumers through **dual-token handling**:
 
 1. **When Minting Tokens (`createSendToken`)**:
    - The token is placed into an encrypted, HTTP-only cookie.
@@ -524,7 +524,7 @@ sequenceDiagram
 
 If an account is hijacked and the user changes their password, all previously issued tokens on other devices must become immediately invalid.
 
-Natours accomplishes this via the `changedPasswordAfter` schema method:
+CarthageWay accomplishes this via the `changedPasswordAfter` schema method:
 
 ```javascript
 // models/userModel.js
@@ -549,9 +549,9 @@ userSchema.methods.changedPasswordAfter = function (tokenIssuedAt) {
 
 If your database is dumped or compromised, an attacker can read plain password reset tokens and take over any account.
 
-#### The Natours Defense
+#### The CarthageWay Defense
 
-Natours generates a 32-byte cryptographic random token, sends the **plain token** to the user's email, and saves only the **one-way SHA-256 hash** in the database.
+CarthageWay generates a 32-byte cryptographic random token, sends the **plain token** to the user's email, and saves only the **one-way SHA-256 hash** in the database.
 
 ```mermaid
 sequenceDiagram
@@ -615,7 +615,7 @@ When logged in, users cannot change passwords through general update endpoints. 
 
 ### Role Hierarchy (`user`, `guide`, `lead-guide`, `admin`)
 
-Natours implements **Role-Based Access Control (RBAC)** across system resources. Roles are stored directly on the `User` document:
+CarthageWay implements **Role-Based Access Control (RBAC)** across system resources. Roles are stored directly on the `User` document:
 
 - **`user`**: Default role. Can view tours, manage their own profile and passwords.
 - **`guide`**: Can view internal tour details and tour operations.
@@ -715,7 +715,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 
 Hard-deleting user records breaks database foreign key associations, historical tour reservations, and financial logs.
 
-Natours implements **soft deletion**:
+CarthageWay implements **soft deletion**:
 
 ```javascript
 // controllers/userController.js
