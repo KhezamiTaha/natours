@@ -1,0 +1,114 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='stylesheet', href='/vendor/cropperjs/cropper.min.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title CarthageWay | #{title}
+
+  body
+    header.header
+      nav.nav.nav--tours
+        a.nav__el(href='/') All tours
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user
+        a.nav__el(href='/') Browse tours
+        a.nav__el.nav__el--profile(href='/me', aria-current='page')
+          img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`, data-profile-photo)
+          span.nav__user-name(data-profile-name)= currentUser.name
+        button.nav__el(type='button', data-auth-logout) Log out
+        span(data-auth-status, role='status', aria-live='polite')
+
+    main.main
+      .user-view
+        aside.user-view__menu.account-view__menu
+          .account-view__identity
+            button.account-view__photo-drop(type='button', data-photo-drop, data-photo-choose, aria-label='Change profile photo', aria-describedby='photo-help')
+              img.account-view__photo(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`, data-profile-photo)
+              span.account-view__photo-overlay(aria-hidden='true')
+                svg
+                  use(xlink:href='/img/icons.svg#icon-camera')
+                span Change photo
+              span.account-view__drop-hint(data-photo-drop-hint) Drop photo
+            h1.account-view__name(data-profile-name)= currentUser.name
+            p.account-view__email(data-profile-email)= currentUser.email
+            button.account-view__photo-action(type='button', data-photo-choose)
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-upload')
+              span Choose a photo
+            input(type='file', accept='image/jpeg,image/png,image/webp', data-photo-input, hidden)
+            p.account-view__photo-help#photo-help JPEG, PNG, or WebP · Up to 5 MB · Drag onto photo
+            p.account-view__photo-status(role='status', aria-live='polite', data-photo-message)
+          ul.side-nav
+            li.side-nav--active
+              a(href='#profile-details', aria-current='page') Profile details
+            li
+              a(href='#security-settings') Password & security
+
+        .user-view__content
+          section.user-view__form-container.account-section#profile-details
+            h2.heading-secondary.ma-bt-md Profile details
+            form.account-form(data-account-form='profile')
+              .form__group
+                label.form__label(for='account-name') Full name
+                input#account-name.form__input(type='text', name='name', value=currentUser.name, autocomplete='name', required, maxlength='80')
+              .form__group.ma-bt-md
+                label.form__label(for='account-email') Email address
+                input#account-email.form__input(type='email', name='email', value=currentUser.email, autocomplete='email', required)
+              .form__group.right
+                button.btn.btn--small.btn--green(type='submit') Save changes
+              p.form__message(data-account-message, role='status', aria-live='polite')
+
+          section.user-view__form-container.account-section#security-settings
+            h2.heading-secondary.ma-bt-md Change password
+            form.account-form(data-account-form='password')
+              .form__group
+                label.form__label(for='current-password') Current password
+                input#current-password.form__input(type='password', name='currentPassword', autocomplete='current-password', required, minlength='8')
+              .form__group
+                label.form__label(for='new-password') New password
+                input#new-password.form__input(type='password', name='password', autocomplete='new-password', required, minlength='8')
+              .form__group.ma-bt-md
+                label.form__label(for='confirm-password') Confirm new password
+                input#confirm-password.form__input(type='password', name='passwordConfirm', autocomplete='new-password', required, minlength='8')
+              .form__group.right
+                button.btn.btn--small.btn--green(type='submit') Update password
+              p.form__message(data-account-message, role='status', aria-live='polite')
+
+    dialog.account-photo-dialog(data-photo-dialog, aria-labelledby='photo-dialog-title')
+      h2.heading-secondary#photo-dialog-title Crop profile photo
+      p.account-photo-dialog__hint Drag the image to position it, then adjust the crop.
+      p.account-photo-dialog__filename(data-photo-filename)
+      .account-photo-dialog__frame(tabindex='0', role='group', aria-label='Crop position. Use arrow keys to move the image and Shift plus an arrow for larger movement.')
+        img.account-photo-dialog__image(src='', alt='Crop preview', data-photo-preview)
+      .account-photo-dialog__tools(role='group', aria-label='Photo crop controls')
+        button.account-photo-dialog__tool(type='button', data-photo-rotate, aria-label='Rotate photo left') Rotate
+        button.account-photo-dialog__tool(type='button', data-photo-reset) Reset crop
+        button.account-photo-dialog__tool(type='button', data-photo-zoom-out, aria-label='Zoom out') -
+        .account-photo-dialog__zoom-control
+          label.account-photo-dialog__zoom-label(for='photo-zoom') Zoom
+          input#photo-zoom.account-photo-dialog__zoom(type='range', min='0.1', max='3', step='0.01', value='1', data-photo-zoom, aria-label='Zoom photo', autofocus)
+        button.account-photo-dialog__tool(type='button', data-photo-zoom-in, aria-label='Zoom in') +
+      p.account-photo-dialog__status(role='status', aria-live='polite', data-photo-dialog-message)
+      .account-photo-dialog__actions
+        button.btn.btn--white.btn--small(type='button', data-photo-cancel) Cancel
+        button.btn.btn--green.btn--small(type='button', data-photo-upload) Save photo
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
+
+    script(src='/js/auth.js', defer)
+    script(src='/vendor/cropperjs/cropper.min.js', defer)
+    script(src='/js/account.js', defer)

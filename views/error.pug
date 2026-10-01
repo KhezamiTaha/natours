@@ -1,0 +1,20 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title CarthageWay | #{statusCode} - #{title}
+
+  body.error-page
+    header.error-page__header
+      a.error-page__brand(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-green.png', alt='CarthageWay')
+    main.error-page__main
+      section.error(aria-labelledby='error-heading')
+        p.error__code Error #{statusCode}
+        h1.error__heading(id='error-heading')= title
+        p.error__msg= message
+        a.btn.btn--green.error-page__action(href='/') Back to all tours

@@ -6,9 +6,14 @@ html(lang='en')
     link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
     link(rel='stylesheet', href='/css/style.css')
     link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
-    title Natours | #{title}
+    if mapboxToken && mapLocations.length
+      link(rel='stylesheet', href='https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.css')
+      script(src='https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.js', defer)
+      script(src='/js/tour-map.js', defer)
+    script(src='/js/auth.js', defer)
+    title CarthageWay | #{title}
 
-  body
+  body.tour-page
     header.header
       nav.nav.nav--tours
         a.nav__el(href='/') All tours
@@ -19,19 +24,26 @@ html(lang='en')
           input.nav__search-input(type='text', placeholder='Search tours', aria-label='Search tours')
       .header__logo
         a(href='/')
-          img(src='/img/logo-white.png', alt='Natours logo')
+          img(src='/img/logo-white.png', alt='CarthageWay logo')
       nav.nav.nav--user
-        a.nav__el(href='#') My bookings
-        a.nav__el(href='#')
-          img.nav__user-img(src='/img/user.jpg', alt='User photo')
-          span Jonas
+        if currentUser
+          a.nav__el(href='#') My bookings
+          a.nav__el.nav__el--profile(href='/me')
+            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
+            span.nav__user-name= currentUser.name
+          button.nav__el(type='button', data-auth-logout) Log out
+          span(data-auth-status, role='status', aria-live='polite')
+        else
+          a.nav__el(href='/login') Log in
+          a.nav__el.nav__el--cta(href='/signup') Sign up
 
-    main
+    main.tour-page__main
       section.section-header
         .header__hero
           .header__hero-overlay &nbsp;
           img.header__hero-img(src=`/img/tours/${tour.imageCover}`, alt=tour.name)
         .heading-box
+          p.heading-box__eyebrow Explore Tunisia
           h1.heading-primary
             span= tour.name
           .heading-box__group
@@ -46,69 +58,133 @@ html(lang='en')
 
       section.section-description
         .overview-box
-          div
-            .overview-box__group
-              h2.heading-secondary.ma-bt-lg Quick facts
-              .overview-box__detail
-                svg.overview-box__icon
-                  use(xlink:href='/img/icons.svg#icon-calendar')
-                span.overview-box__label Next date
-                span.overview-box__text= tour.startDates.length ? tour.startDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'To be announced'
-              .overview-box__detail
-                svg.overview-box__icon
-                  use(xlink:href='/img/icons.svg#icon-trending-up')
-                span.overview-box__label Difficulty
-                span.overview-box__text= tour.difficulty
-              .overview-box__detail
-                svg.overview-box__icon
-                  use(xlink:href='/img/icons.svg#icon-user')
-                span.overview-box__label Participants
-                span.overview-box__text= `${tour.maxGroupSize} people`
-              .overview-box__detail
-                svg.overview-box__icon
-                  use(xlink:href='/img/icons.svg#icon-star')
-                span.overview-box__label Rating
-                span.overview-box__text= `${tour.ratingsAverage} / 5`
+          .overview-box__content
+            .overview-box__group.overview-box__group--facts
+              .section-description__heading
+                p.section-description__eyebrow Trip essentials
+                h2.section-description__title At a glance
+              .overview-box__facts
+                .overview-box__detail
+                  svg.overview-box__icon
+                    use(xlink:href='/img/icons.svg#icon-calendar')
+                  span.overview-box__label Next date
+                  span.overview-box__text= tour.startDates.length ? tour.startDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'To be announced'
+                .overview-box__detail
+                  svg.overview-box__icon
+                    use(xlink:href='/img/icons.svg#icon-trending-up')
+                  span.overview-box__label Difficulty
+                  span.overview-box__text= tour.difficulty
+                .overview-box__detail
+                  svg.overview-box__icon
+                    use(xlink:href='/img/icons.svg#icon-user')
+                  span.overview-box__label Group size
+                  span.overview-box__text= `Up to ${tour.maxGroupSize} people`
+                .overview-box__detail
+                  svg.overview-box__icon
+                    use(xlink:href='/img/icons.svg#icon-star')
+                  span.overview-box__label Guest rating
+                  span.overview-box__text= `${tour.ratingsAverage} / 5`
 
             if tour.guides.length
-              .overview-box__group
-                h2.heading-secondary.ma-bt-lg Your tour guides
-                each guide in tour.guides
-                  .overview-box__detail
-                    img.overview-box__img(src=`/img/users/${guide.photo}`, alt=guide.name)
-                    span.overview-box__label= guide.role.replace('-', ' ')
-                    span.overview-box__text= guide.name
+              .overview-box__group.overview-box__group--guides
+                .section-description__heading
+                  p.section-description__eyebrow Your crew
+                  h2.section-description__title Meet the guides
+                .overview-box__guide-list
+                  each guide in tour.guides
+                    .overview-box__guide
+                      img.overview-box__img(src=`/img/users/${guide.photo}`, alt='')
+                      .overview-box__guide-copy
+                        span.overview-box__label= guide.role.replace('-', ' ')
+                        strong.overview-box__text= guide.name
 
         .description-box
-          h2.heading-secondary.ma-bt-lg= `About ${tour.name.toLowerCase()}`
-          each paragraph in tour.description.split('\n')
-            if paragraph
-              p.description__text= paragraph
+          p.section-description__eyebrow The experience
+          h2.section-description__title= tour.name
+          p.description__lead= tour.summary
+          .description-box__content
+            each paragraph in tour.description.split('\n')
+              if paragraph
+                p.description__text= paragraph
 
       if tour.images.length
-        section.section-pictures
-          each image, index in tour.images
-            .picture-box
-              img.picture-box__img(class=`picture-box__img--${index + 1}`, src=`/img/tours/${image}`, alt=`${tour.name} ${index + 1}`)
-
-      if tour.locations.length
-        section.section-description
-          .overview-box
+        section.section-gallery
+          header.section-gallery__header
             div
-              .overview-box__group
-                h2.heading-secondary.ma-bt-lg Itinerary
-                each location in tour.locations
-                  .overview-box__detail
-                    svg.overview-box__icon
-                      use(xlink:href='/img/icons.svg#icon-map-pin')
-                    span.overview-box__label= `Day ${location.day}`
-                    span.overview-box__text= location.description
-          .description-box
-            h2.heading-secondary.ma-bt-lg Explore Tunisia
-            p.description__text= `Your ${tour.duration}-day adventure begins in ${tour.startLocation.description} and includes ${tour.locations.length} unforgettable stops.`
+              p.section-gallery__eyebrow Photo journal
+              h2.section-gallery__title= `Scenes from ${tour.name}`
+            span.section-gallery__count= `${tour.images.length} ${tour.images.length === 1 ? 'PHOTO' : 'PHOTOS'}`
+          .section-pictures
+            each image, index in tour.images
+              .picture-box
+                img.picture-box__img(src=`/img/tours/${image}`, alt=`${tour.name}, photo ${index + 1}`)
+
+      if tourLocations.length
+        section.section-map#tour-map-section
+          .section-map__inner
+            header.section-map__header
+              div
+                p.section-map__eyebrow Route overview
+                h2.section-map__title Explore the itinerary
+                p.section-map__description= mapStopCount ? `Follow ${mapStopCount} ${mapStopCount === 1 ? 'planned stop' : 'planned stops'} across ${tour.duration} days.` : `Explore the starting location for this ${tour.duration}-day tour.`
+              span.section-map__count= mapStopCount ? `${mapStopCount} ${mapStopCount === 1 ? 'STOP' : 'STOPS'}` : 'START ONLY'
+            .section-map__legend(aria-label='Map legend')
+              if tourLocations[0] && tourLocations[0].type === 'start'
+                span.section-map__legend-item
+                  span.section-map__legend-marker.section-map__legend-marker--start S
+                  | Start
+              if mapStopCount
+                span.section-map__legend-item
+                  span.section-map__legend-marker.section-map__legend-marker--stop 1
+                  | Stops in order
+            .section-map__layout
+              aside.section-map__itinerary(aria-label='Tour itinerary')
+                h3.section-map__itinerary-title Route stops
+                ol.section-map__stop-list
+                  each location in tourLocations
+                    li.section-map__stop-item
+                      if mapboxToken && location.coordinatesValid
+                        button.section-map__stop(type='button', data-map-location=location.mapIndex, aria-pressed='false')
+                          span.section-map__stop-number(class=location.type === 'start' ? 'section-map__stop-number--start' : 'section-map__stop-number--stop')= location.type === 'start' ? 'S' : location.order
+                          span.section-map__stop-copy
+                            span.section-map__stop-label= location.label
+                            strong.section-map__stop-name= location.description
+                            if location.address
+                              span.section-map__stop-address= location.address
+                      else
+                        .section-map__stop.section-map__stop--static
+                          span.section-map__stop-number(class=location.type === 'start' ? 'section-map__stop-number--start' : 'section-map__stop-number--stop')= location.type === 'start' ? 'S' : location.order
+                          span.section-map__stop-copy
+                            span.section-map__stop-label= location.label
+                            strong.section-map__stop-name= location.description
+                            if location.address
+                              span.section-map__stop-address= location.address
+                            unless location.coordinatesValid
+                              span.section-map__stop-address Map position unavailable
+              .section-map__stage
+                if mapboxToken && mapLocations.length
+                  #map(
+                    data-mapbox-token=mapboxToken
+                    data-locations=JSON.stringify(mapLocations)
+                    role='region'
+                    aria-label='Interactive map of tour locations'
+                  )
+                  p.section-map__status(data-map-status role='status' aria-live='polite') Loading map...
+                  button.section-map__fit(type='button' data-map-fit disabled) Fit all stops
+                else
+                  p.section-map__fallback(role='status')
+                    if mapboxToken
+                      | Map positions are unavailable. Use the route stops list to explore the itinerary.
+                    else
+                      | Interactive map is unavailable. Use the route stops list to explore the itinerary.
 
       if tour.reviews.length
         section.section-reviews
+          header.section-reviews__header
+            div
+              p.section-reviews__eyebrow Notes from the road
+              h2.section-reviews__title Traveler reviews
+            span.section-reviews__count= `${tour.reviews.length} ${tour.reviews.length === 1 ? 'REVIEW' : 'REVIEWS'}`
           .reviews
             each review in tour.reviews
               .reviews__card
@@ -124,7 +200,7 @@ html(lang='en')
       section.section-cta
         .cta
           .cta__img.cta__img--logo
-            img(src='/img/logo-white.png', alt='Natours logo')
+            img(src='/img/logo-white.png', alt='CarthageWay logo')
           if tour.images[1]
             img.cta__img.cta__img--1(src=`/img/tours/${tour.images[1]}`, alt='')
           if tour.images[0]
@@ -136,7 +212,7 @@ html(lang='en')
 
     footer.footer
       .footer__logo
-        img(src='/img/logo-green.png', alt='Natours logo')
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
       ul.footer__nav
         li: a(href='#') About us
         li: a(href='#') Download apps
