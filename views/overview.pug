@@ -9,72 +9,219 @@ html(lang='en')
     title CarthageWay | #{title || 'Exciting tours for adventurous people'}
 
   body
-    header.header
-      nav.nav.nav--tours
-        a.nav__el(href='/') All tours
-        form.nav__search
-          button.nav__search-btn
-            svg
-              use(xlink:href='/img/icons.svg#icon-search')
-          input.nav__search-input(type='text', placeholder='Search tours')
-      a.header__logo(href='/', aria-label='CarthageWay home')
-        img(src='/img/logo-white.png', alt='CarthageWay logo')
-      nav.nav.nav--user
-        if currentUser
-          a.nav__el(href='#') My bookings
-          a.nav__el.nav__el--profile(href='/me')
-            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
-            span.nav__user-name= currentUser.name
-          button.nav__el(type='button', data-auth-logout) Log out
-          span(data-auth-status, role='status', aria-live='polite')
-        else
-          a.nav__el(href='/login') Log in
-          a.nav__el.nav__el--cta(href='/signup') Sign up
+    if currentUser && (currentUser.role === 'admin' || currentUser.role === 'lead-guide')
+      header.header.header--admin.header--admin-home
+        nav.nav.nav--tours(aria-label='Main navigation')
+          a.nav__el(href='/', aria-current='page') All tours
+          form.nav__search(role='search', action='/', method='GET')
+            label.sr-only(for='home-tour-search') Search tours
+            button.nav__search-btn(type='submit', aria-label='Search tours')
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-search')
+            input#home-tour-search.nav__search-input(type='search', name='search', value=search, placeholder='Search tours')
+        a.header__logo(href='/', aria-label='CarthageWay home')
+          img(src='/img/logo-white.png', alt='CarthageWay logo')
+        nav.nav.nav--user(aria-label='Account navigation')
+          a.nav__el.nav__el--bookings(href='/my-bookings') My bookings
+          a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+            svg.nav__manage-icon(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-settings')
+            span.nav__manage-label Manage tours
+          details.nav-account-menu(data-account-menu)
+            summary.nav-account-menu__trigger
+              img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+              span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+              span.nav-account-menu__caret(aria-hidden='true')
+            .nav-account-menu__dropdown
+              a.nav-account-menu__item(href='/me') Profile
+              button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+              span.sr-only(data-auth-status, role='status', aria-live='polite')
+    else
+      header.header
+        nav.nav.nav--tours(aria-label='Main navigation')
+          a.nav__el(href='/', aria-current='page') All tours
+          form.nav__search(role='search', action='/', method='GET')
+            label.sr-only(for='home-tour-search') Search tours
+            button.nav__search-btn(type='submit', aria-label='Search tours')
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-search')
+            input#home-tour-search.nav__search-input(type='search', name='search', value=search, placeholder='Search tours')
+        a.header__logo(href='/', aria-label='CarthageWay home')
+          img(src='/img/logo-white.png', alt='CarthageWay logo')
+        nav.nav.nav--user(aria-label='Account navigation')
+          if currentUser
+            a.nav__el.nav__el--bookings(href='/my-bookings') My bookings
+            if currentUser.role === 'admin' || currentUser.role === 'lead-guide'
+              a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+                svg.nav__manage-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-settings')
+                span.nav__manage-label Manage tours
+            details.nav-account-menu(data-account-menu)
+              summary.nav-account-menu__trigger
+                img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+                span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+                span.nav-account-menu__caret(aria-hidden='true')
+              .nav-account-menu__dropdown
+                a.nav-account-menu__item(href='/me') Profile
+                button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+            span.sr-only(data-auth-status, role='status', aria-live='polite')
+          else
+            a.nav__el(href='/login') Log in
+            a.nav__el.nav__el--cta(href='/signup') Sign up
 
     main.main
-      .card-container
-        each tour in tours
-          .card
-            .card__header
-              a.card__picture-link(href=`/tour/${tour.slug}`, aria-label=`View ${tour.name}`)
-                .card__picture
-                  .card__picture-overlay &nbsp;
-                  img.card__picture-img(src=`/img/tours/${tour.imageCover}`, alt=`${tour.name}`)
-              h3.heading-tertirary
-                a.card__title-link(href=`/tour/${tour.slug}`)
-                  span= tour.name
+      section.overview-hero
+        .overview-hero__inner
+          span.overview-hero__badge Authentic Tunisian Adventures
+          h1.overview-hero__title Discover the Magic of Tunisia
+          p.overview-hero__subtitle Handcrafted guided expeditions from the ancient ruins of Carthage to the vast Sahara dunes. Small groups, local licensed experts, and authentic Berber hospitality.
+          .overview-hero__trust
+            span.hero-trust__item
+              svg.hero-trust__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-shield')
+              | Free cancellation up to 48h prior
+            span.hero-trust__dot •
+            span.hero-trust__item
+              svg.hero-trust__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-star')
+              | 4.9/5 average traveler rating
+            span.hero-trust__dot •
+            span.hero-trust__item
+              svg.hero-trust__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-award')
+              | 100% verified local guides
 
-            .card__details
-              h4.card__sub-heading= `${tour.difficulty} ${tour.duration}-day tour`
-              p.card__text= tour.summary
-              .card__data
-                svg.card__icon
-                  use(xlink:href='/img/icons.svg#icon-map-pin')
-                span= tour.startLocation && tour.startLocation.description ? tour.startLocation.description : 'Tunisia'
-              .card__data
-                svg.card__icon
-                  use(xlink:href='/img/icons.svg#icon-calendar')
-                span= tour.startDates && tour.startDates.length ? new Date(tour.startDates[0]).toLocaleString('en-us', { month: 'long', year: 'numeric' }) : 'Date TBA'
-              .card__data
-                svg.card__icon
-                  use(xlink:href='/img/icons.svg#icon-flag')
-                span= `${tour.locations ? tour.locations.length : 0} stops`
-              .card__data
-                svg.card__icon
-                  use(xlink:href='/img/icons.svg#icon-user')
-                span= `${tour.maxGroupSize} people`
+      - 
+        const sortOptions = [
+          { value: 'recommended', label: 'Recommended', icon: 'icon-award' },
+          { value: 'rating-desc', label: 'Highest Rated', icon: 'icon-star' },
+          { value: 'price-asc', label: 'Price: Low to High', icon: 'icon-arrow-down' },
+          { value: 'price-desc', label: 'Price: High to Low', icon: 'icon-arrow-up' },
+          { value: 'duration-asc', label: 'Duration: Shortest', icon: 'icon-clock' },
+          { value: 'duration-desc', label: 'Duration: Longest', icon: 'icon-clock' }
+        ];
+        const activeSortObj = sortOptions.find(o => o.value === currentSort) || sortOptions[0];
+        const makeFilterUrl = (diff) => {
+          const params = [];
+          if (diff && diff !== 'all') params.push(`difficulty=${diff}`);
+          if (currentSort && currentSort !== 'recommended') params.push(`sort=${currentSort}`);
+          if (search) params.push(`search=${encodeURIComponent(search)}`);
+          return params.length ? `/?${params.join('&')}` : '/';
+        };
+        const clearSearchUrl = () => {
+          const params = [];
+          if (currentDifficulty && currentDifficulty !== 'all') params.push(`difficulty=${currentDifficulty}`);
+          if (currentSort && currentSort !== 'recommended') params.push(`sort=${currentSort}`);
+          return params.length ? `/?${params.join('&')}` : '/';
+        };
 
-            .card__footer
-              p.card__price
-                span.card__price-amount= tour.price.toLocaleString()
-                span.card__price-currency TND
-                span.card__price-text / person
-              p.card__ratings(aria-label=`${tour.ratingsAverage} out of 5 from ${tour.ratingsQuantity} ratings`)
-                svg.card__rating-star(aria-hidden='true')
-                  use(xlink:href='/img/icons.svg#icon-star')
-                span.card__rating-score= tour.ratingsAverage
-                span.card__rating-count= `${tour.ratingsQuantity} ratings`
-              a.btn.btn--green.btn--small(href=`/tour/${tour.slug}`) Details
+      section.overview-discovery
+        .overview-discovery__bar
+          .overview-discovery__filters
+            span.filter-label Filter:
+            a.difficulty-pill(href=makeFilterUrl('all'), class=(!currentDifficulty || currentDifficulty === 'all') ? 'difficulty-pill--active' : '') All Tours
+            a.difficulty-pill.difficulty-pill--easy(href=makeFilterUrl('easy'), class=currentDifficulty === 'easy' ? 'difficulty-pill--active' : '') Easy
+            a.difficulty-pill.difficulty-pill--medium(href=makeFilterUrl('medium'), class=currentDifficulty === 'medium' ? 'difficulty-pill--active' : '') Medium
+            a.difficulty-pill.difficulty-pill--difficult(href=makeFilterUrl('difficult'), class=currentDifficulty === 'difficult' ? 'difficulty-pill--active' : '') Difficult
+
+          .overview-discovery__sort-wrap
+            span.sort-label Sort by:
+            .custom-sort-dropdown(data-sort-dropdown)
+              button.custom-sort-dropdown__trigger(type='button', aria-haspopup='listbox', aria-expanded='false', data-sort-trigger)
+                svg.custom-sort-dropdown__trigger-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-sliders')
+                span.custom-sort-dropdown__trigger-text(data-sort-selected-label)= activeSortObj.label
+                svg.custom-sort-dropdown__caret(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-chevron-down')
+              
+              .custom-sort-dropdown__menu(role='listbox', aria-label='Sort expeditions', data-sort-menu)
+                each opt in sortOptions
+                  button.custom-sort-dropdown__item(
+                    type='button',
+                    role='option',
+                    aria-selected=(opt.value === activeSortObj.value ? 'true' : 'false'),
+                    class=(opt.value === activeSortObj.value ? 'custom-sort-dropdown__item--active' : ''),
+                    data-sort-value=opt.value
+                  )
+                    svg.custom-sort-dropdown__item-icon(aria-hidden='true')
+                      use(xlink:href=`/img/icons.svg#${opt.icon}`)
+                    span.custom-sort-dropdown__item-label= opt.label
+                    if opt.value === activeSortObj.value
+                      svg.custom-sort-dropdown__check(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-check')
+
+        if search
+          p.overview-discovery__search-query
+            | Showing search results for: #[strong= `"${search}"`]
+            a.search-query__clear(href=clearSearchUrl()) Clear search
+
+      if tours.length
+        .card-container
+          each tour in tours
+            .card
+              .card__header
+                a.card__picture-link(href=`/tour/${tour.slug}`, aria-label=`View ${tour.name}`)
+                  .card__picture
+                    .card__picture-overlay &nbsp;
+                    img.card__picture-img(src=`/img/tours/${tour.imageCover}`, alt=`${tour.name}`)
+                  
+                  .card__floating-badges
+                    span.card-badge.card-badge--difficulty(class=`card-badge--${tour.difficulty}`)= tour.difficulty
+                    span.card-badge.card-badge--duration= `${tour.duration} Days`
+                  
+                  if tour.priceDiscount > 0
+                    span.card__discount-pill= `Save €${tour.price - tour.priceDiscount}`
+
+                h3.heading-tertirary
+                  a.card__title-link(href=`/tour/${tour.slug}`)
+                    span= tour.name
+
+              .card__details
+                h4.card__sub-heading= `${tour.difficulty} ${tour.duration}-day expedition`
+                p.card__text= tour.summary
+                .card__data
+                  svg.card__icon
+                    use(xlink:href='/img/icons.svg#icon-map-pin')
+                  span= tour.startLocation && tour.startLocation.description ? tour.startLocation.description : 'Tunisia'
+                .card__data
+                  svg.card__icon
+                    use(xlink:href='/img/icons.svg#icon-calendar')
+                  span= tour.startDates && tour.startDates.length ? new Date(tour.startDates[0]).toLocaleString('en-us', { month: 'short', year: 'numeric' }) : 'Flexible dates'
+                .card__data
+                  svg.card__icon
+                    use(xlink:href='/img/icons.svg#icon-flag')
+                  span= `${tour.locations ? tour.locations.length : 0} planned stops`
+                .card__data
+                  svg.card__icon
+                    use(xlink:href='/img/icons.svg#icon-users')
+                  span= `Up to ${tour.maxGroupSize} guests`
+
+              .card__footer
+                .card__price-box
+                  if tour.priceDiscount > 0
+                    span.card__original-price= `€${tour.price}`
+                  p.card__price
+                    span.card__price-amount= (tour.priceDiscount > 0 ? tour.priceDiscount : tour.price).toLocaleString()
+                    span.card__price-currency EUR
+                    span.card__price-text / person
+                
+                p.card__ratings(aria-label=`${tour.ratingsAverage} out of 5 from ${tour.ratingsQuantity} ratings`)
+                  svg.card__rating-star(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-star')
+                  span.card__rating-score= tour.ratingsAverage
+                  span.card__rating-count= `(${tour.ratingsQuantity})`
+
+                .card__actions
+                  a.btn.btn--white.btn--small(href=`/tour/${tour.slug}`) Details
+                  a.btn.btn--green.btn--small(href=`/tour/${tour.slug}#book-tour`) Book &rarr;
+      else
+        .overview__empty-state
+          .overview__empty-icon-wrap
+            svg.overview__empty-icon(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-compass')
+          h2.overview__empty-title No Tours Found
+          p.overview__empty-desc We couldn't find any expeditions matching your current search or filter criteria. Try resetting the filters to explore all available adventures.
+          a.btn.btn--green(href='/') View All Tours
 
     footer.footer
       .footer__logo
@@ -88,3 +235,4 @@ html(lang='en')
       p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
 
     script(src='/js/auth.js', defer)
+    script(src='/js/overview.js', defer)

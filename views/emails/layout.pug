@@ -1,0 +1,30 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge')
+    title= subject
+    style.
+      @media only screen and (max-width: 620px) {
+        .email-shell { width: 100% !important; }
+        .email-content { padding: 28px 22px !important; }
+      }
+  body(style='margin:0;padding:0;background:#f1f5f3;font-family:Arial,Helvetica,sans-serif;color:#18332a;-webkit-text-size-adjust:100%;')
+    table(role='presentation', width='100%', cellpadding='0', cellspacing='0', border='0', style='width:100%;background:#f1f5f3;border-collapse:collapse;')
+      tbody
+        tr
+          td(align='center', style='padding:36px 14px;')
+            table.email-shell(role='presentation', width='600', cellpadding='0', cellspacing='0', border='0', style='width:100%;max-width:600px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #dce8e1;border-radius:8px;overflow:hidden;')
+              tbody
+                tr
+                  td(style='padding:24px 32px;background:#155c42;')
+                    a(href=homeUrl, style='color:#ffffff;font-size:20px;font-weight:bold;text-decoration:none;') CarthageWay
+                tr
+                  td.email-content(style='padding:38px 40px 34px;')
+                    p(style='margin:0 0 18px;color:#577267;font-size:13px;line-height:20px;')= preheader
+                    block emailContent
+                tr
+                  td(style='padding:20px 32px;border-top:1px solid #e8efeb;background:#f8faf9;')
+                    p(style='margin:0;color:#6b7d75;font-size:12px;line-height:19px;') CarthageWay · Guided journeys through Tunisia
+                    p(style='margin:7px 0 0;color:#84938c;font-size:11px;line-height:17px;') This is a service email related to your CarthageWay account.

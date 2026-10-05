@@ -1,0 +1,206 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title CarthageWay | #{title}
+  body.booking-result-page
+    header.header
+      nav.nav.nav--tours(aria-label='Main navigation')
+        a.nav__el(href='/') All tours
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user(aria-label='Account navigation')
+        if currentUser
+          a.nav__el.nav__el--bookings(href='/my-bookings') My bookings
+          if currentUser.role === 'admin' || currentUser.role === 'lead-guide'
+            a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+              svg.nav__manage-icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-settings')
+              span.nav__manage-label Manage tours
+          details.nav-account-menu(data-account-menu)
+            summary.nav-account-menu__trigger
+              img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+              span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+              span.nav-account-menu__caret(aria-hidden='true')
+            .nav-account-menu__dropdown
+              a.nav-account-menu__item(href='/me') Profile
+              a.nav-account-menu__item(href='/my-bookings') My bookings
+              button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+          span.sr-only(data-auth-status, role='status', aria-live='polite')
+        else
+          a.nav__el(href='/login') Log in
+          a.nav__el.nav__el--cta(href='/signup') Sign up
+
+    main.booking-result
+      .booking-result__container
+        if result === 'success' || booking.status === 'confirmed'
+          .booking-result__hero
+            .booking-result__icon-wrap.booking-result__icon-wrap--success
+              svg.booking-result__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-check-circle')
+            p.booking-result__eyebrow Reservation Secured
+            if booking.status === 'confirmed'
+              h1.booking-result__title Booking Confirmed!
+              p.booking-result__lead Your adventure across Tunisia has been officially confirmed. Pack your bags and get ready for an unforgettable journey!
+            else
+              h1.booking-result__title Payment Received
+              p.booking-result__lead(
+                data-booking-status
+                data-status='pending'
+                data-status-url=`/api/v1/bookings/status/${booking._id}`
+                role='status'
+                aria-live='polite'
+              ) We received your payment and are finalizing your reservation with Stripe. This page will update automatically in a few seconds.
+
+          .booking-result__card
+            if booking.tour
+              .receipt-tour
+                .receipt-tour__img-wrap
+                  img.receipt-tour__img(src=`/img/tours/${booking.tour.imageCover}`, alt=booking.tour.name)
+                  span.receipt-tour__badge= `${booking.tour.duration || 'Multiple'} Days`
+                .receipt-tour__info
+                  span.receipt-tour__eyebrow Selected Expedition
+                  h2.receipt-tour__title
+                    a(href=`/tour/${booking.tour.slug}`)= booking.tour.name
+                  if booking.tour.startLocation
+                    p.receipt-tour__location
+                      svg.receipt-tour__location-icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-map-pin')
+                      span= booking.tour.startLocation.description || booking.tour.startLocation.address || 'Tunisia'
+
+            .receipt-details
+              .receipt-details__header
+                .receipt-details__ref-box
+                  span.receipt-details__label Booking Reference
+                  .receipt-details__code-row
+                    strong.receipt-details__code(data-booking-ref)= `#CW-${booking._id.toString().toUpperCase().slice(-8)}`
+                    button.receipt-details__copy-btn(type='button', data-copy-ref, aria-label='Copy booking reference')
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-copy')
+                      span.copy-btn__text Copy
+                .receipt-details__status-box
+                  span.receipt-details__label Status
+                  span.receipt-status-pill(class=`receipt-status-pill--${booking.status}`)= booking.status === 'confirmed' ? '● Confirmed & Paid' : '● Processing Payment'
+
+              .receipt-grid
+                .receipt-grid__item
+                  svg.receipt-grid__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-calendar')
+                  div
+                    span.receipt-grid__label Departure Date
+                    strong.receipt-grid__val= booking.departureDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                .receipt-grid__item
+                  svg.receipt-grid__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-users')
+                  div
+                    span.receipt-grid__label Travelers
+                    strong.receipt-grid__val= `${booking.travelerCount} ${booking.travelerCount === 1 ? 'Traveler' : 'Travelers'}`
+                .receipt-grid__item
+                  svg.receipt-grid__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-credit-card')
+                  div
+                    span.receipt-grid__label Payment Method
+                    strong.receipt-grid__val Stripe Secure Card
+                .receipt-grid__item
+                  svg.receipt-grid__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-shield')
+                  div
+                    span.receipt-grid__label Cancellation Policy
+                    strong.receipt-grid__val Free up to 48h prior
+
+              .receipt-summary
+                .receipt-summary__row
+                  span= `Tour ticket (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(booking.unitAmountCents / 100)} × ${booking.travelerCount})`
+                  span= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(booking.totalAmountCents / 100)
+                .receipt-summary__row
+                  span Booking fees & taxes
+                  span.receipt-summary__free Free
+                .receipt-summary__divider
+                .receipt-summary__row.receipt-summary__row--total
+                  span Total Paid
+                  strong.receipt-summary__total-amount= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(booking.totalAmountCents / 100)
+
+            .booking-next-steps
+              h3.booking-next-steps__title What Happens Next?
+              .booking-next-steps__timeline
+                .next-step
+                  .next-step__num 1
+                  .next-step__content
+                    strong.next-step__heading Check your inbox
+                    p.next-step__desc We sent a full receipt and booking confirmation email to #{currentUser ? currentUser.email : 'your email address'}.
+                .next-step
+                  .next-step__num 2
+                  .next-step__content
+                    strong.next-step__heading Access trip details
+                    p.next-step__desc You can view your guide details, full route stops, and packing tips anytime in #[a(href='/my-bookings') My bookings].
+                .next-step
+                  .next-step__num 3
+                  .next-step__content
+                    strong.next-step__heading Meet on departure day
+                    p.next-step__desc Arrive at the designated meeting point 15 minutes prior to start time. Your guide will greet you by name!
+
+          .booking-result__actions
+            a.btn.btn--green(href='/my-bookings')
+              svg.btn__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-compass')
+              | View My Bookings
+            if booking.tour
+              a.btn.btn--secondary(href=`/tour/${booking.tour.slug}`)
+                | Return to Tour Page
+            button.btn.btn--secondary(type='button', onclick='window.print()')
+              svg.btn__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-file-text')
+              | Print Receipt
+
+        else
+          .booking-result__hero
+            .booking-result__icon-wrap.booking-result__icon-wrap--cancel
+              svg.booking-result__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-alert-triangle')
+            p.booking-result__eyebrow Checkout Not Completed
+            h1.booking-result__title Checkout Was Canceled
+            p.booking-result__lead No charge was made to your card. Your selected departure seats were released so other travelers can reserve them.
+
+          .booking-result__card
+            if booking.tour
+              .receipt-tour
+                .receipt-tour__img-wrap
+                  img.receipt-tour__img(src=`/img/tours/${booking.tour.imageCover}`, alt=booking.tour.name)
+                  span.receipt-tour__badge= `${booking.tour.duration || 'Multiple'} Days`
+                .receipt-tour__info
+                  span.receipt-tour__eyebrow Tour Incomplete
+                  h2.receipt-tour__title= booking.tour.name
+                  p.receipt-tour__lead Ready when you are! You can re-attempt checkout whenever you'd like.
+
+            .booking-result__cancel-reassurance
+              .reassurance-item
+                svg.reassurance-item__icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span No payment processed or deducted from your account.
+              .reassurance-item
+                svg.reassurance-item__icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span You can select a different date or number of travelers anytime.
+
+          .booking-result__actions
+            if booking.tour
+              a.btn.btn--green(href=`/tour/${booking.tour.slug}#book-tour`) Try Booking Again &rarr;
+            a.btn.btn--secondary(href='/') Explore Other Tours
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
+
+    script(src='/js/auth.js', defer)
+    script(src='/js/bookingStatus.js', defer)

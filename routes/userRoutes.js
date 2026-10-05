@@ -10,6 +10,12 @@ router.post('/signup', authLimiter, authController.signup);
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', authController.protect, userController.getMe);
+router.get(
+   '/guides',
+   authController.protect,
+   authController.restrictTo('admin', 'lead-guide'),
+   userController.getGuideOptions,
+);
 router.patch(
    '/updatePassword',
    authController.protect,

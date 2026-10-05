@@ -11,38 +11,55 @@ html(lang='en')
       script(src='https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.js', defer)
       script(src='/js/tour-map.js', defer)
     script(src='/js/auth.js', defer)
+    script(src='/js/booking.js', defer)
     title CarthageWay | #{title}
 
   body.tour-page
-    header.header
-      nav.nav.nav--tours
+    header.header(class=currentUser && (currentUser.role === 'admin' || currentUser.role === 'lead-guide') ? 'header--admin header--admin-home' : '')
+      nav.nav.nav--tours(aria-label='Main navigation')
         a.nav__el(href='/') All tours
-        form.nav__search
+        form.nav__search(role='search', action='/', method='GET')
+          label.sr-only(for='tour-search') Search tours
           button.nav__search-btn(type='submit', aria-label='Search tours')
-            svg
+            svg(aria-hidden='true')
               use(xlink:href='/img/icons.svg#icon-search')
-          input.nav__search-input(type='text', placeholder='Search tours', aria-label='Search tours')
-      .header__logo
-        a(href='/')
-          img(src='/img/logo-white.png', alt='CarthageWay logo')
-      nav.nav.nav--user
+          input#tour-search.nav__search-input(type='search', name='search', placeholder='Search tours')
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user(aria-label='Account navigation')
         if currentUser
-          a.nav__el(href='#') My bookings
-          a.nav__el.nav__el--profile(href='/me')
-            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
-            span.nav__user-name= currentUser.name
-          button.nav__el(type='button', data-auth-logout) Log out
-          span(data-auth-status, role='status', aria-live='polite')
+          a.nav__el.nav__el--bookings(href='/my-bookings') My bookings
+          if currentUser.role === 'admin' || currentUser.role === 'lead-guide'
+            a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+              svg.nav__manage-icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-settings')
+              span.nav__manage-label Manage tours
+          details.nav-account-menu(data-account-menu)
+            summary.nav-account-menu__trigger
+              img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+              span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+              span.nav-account-menu__caret(aria-hidden='true')
+            .nav-account-menu__dropdown
+              a.nav-account-menu__item(href='/me') Profile
+              button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+          span.sr-only(data-auth-status, role='status', aria-live='polite')
         else
           a.nav__el(href='/login') Log in
           a.nav__el.nav__el--cta(href='/signup') Sign up
 
     main.tour-page__main
-      section.section-header
+      section.section-header#overview
         .header__hero
           .header__hero-overlay &nbsp;
           img.header__hero-img(src=`/img/tours/${tour.imageCover}`, alt=tour.name)
         .heading-box
+          .heading-box__badges
+            span.heading-badge.heading-badge--difficulty(class=`heading-badge--${tour.difficulty}`)= tour.difficulty
+            span.heading-badge.heading-badge--rating
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-star')
+              strong= tour.ratingsAverage
+              span= `(${tour.ratingsQuantity} ratings)`
           p.heading-box__eyebrow Explore Tunisia
           h1.heading-primary
             span= tour.name
@@ -56,7 +73,27 @@ html(lang='en')
                 use(xlink:href='/img/icons.svg#icon-map-pin')
               span.heading-box__text= tour.startLocation.description
 
-      section.section-description
+      nav.tour-subnav(aria-label='Tour sections navigation')
+        .tour-subnav__inner
+          ul.tour-subnav__list
+            li: a.tour-subnav__link(href='#overview') Overview
+            li: a.tour-subnav__link(href='#experience') The Story
+            if tour.images.length
+              li: a.tour-subnav__link(href='#gallery') Photos
+            if tourLocations.length
+              li: a.tour-subnav__link(href='#tour-map-section') Itinerary Map
+            if tour.reviews.length
+              li: a.tour-subnav__link(href='#reviews') Reviews
+          .tour-subnav__cta
+            - const priceToDisplay = tour.priceDiscount > 0 ? tour.priceDiscount : tour.price
+            span.tour-subnav__price
+              if tour.priceDiscount > 0
+                span.tour-subnav__strikethrough= `€${tour.price}`
+              strong= `€${priceToDisplay}`
+              |  / person
+            a.btn.btn--green.btn--small(href='#book-tour') Book Now
+
+      section.section-description#experience
         .overview-box
           .overview-box__content
             .overview-box__group.overview-box__group--facts
@@ -67,8 +104,8 @@ html(lang='en')
                 .overview-box__detail
                   svg.overview-box__icon
                     use(xlink:href='/img/icons.svg#icon-calendar')
-                  span.overview-box__label Next date
-                  span.overview-box__text= tour.startDates.length ? tour.startDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'To be announced'
+                  span.overview-box__label Next Departure
+                  span.overview-box__text= tour.startDates.length ? tour.startDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Flexible dates'
                 .overview-box__detail
                   svg.overview-box__icon
                     use(xlink:href='/img/icons.svg#icon-trending-up')
@@ -76,14 +113,14 @@ html(lang='en')
                   span.overview-box__text= tour.difficulty
                 .overview-box__detail
                   svg.overview-box__icon
-                    use(xlink:href='/img/icons.svg#icon-user')
-                  span.overview-box__label Group size
-                  span.overview-box__text= `Up to ${tour.maxGroupSize} people`
+                    use(xlink:href='/img/icons.svg#icon-users')
+                  span.overview-box__label Group Capacity
+                  span.overview-box__text= `Up to ${tour.maxGroupSize} guests`
                 .overview-box__detail
                   svg.overview-box__icon
                     use(xlink:href='/img/icons.svg#icon-star')
                   span.overview-box__label Guest rating
-                  span.overview-box__text= `${tour.ratingsAverage} / 5`
+                  span.overview-box__text= `${tour.ratingsAverage} / 5 (${tour.ratingsQuantity})`
 
             if tour.guides.length
               .overview-box__group.overview-box__group--guides
@@ -107,8 +144,28 @@ html(lang='en')
               if paragraph
                 p.description__text= paragraph
 
+          .tour-highlights
+            h3.tour-highlights__title Expedition Highlights
+            ul.tour-highlights__list
+              li
+                svg.highlight-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span Licensed expert local guides specializing in Tunisian history and nature
+              li
+                svg.highlight-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span Carefully curated itinerary featuring #{tourLocations.length} stops from #{tour.startLocation.description}
+              li
+                svg.highlight-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span Authentic culinary moments and immersion in regional culture
+              li
+                svg.highlight-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-check-circle')
+                span Small, intimate group size (maximum #{tour.maxGroupSize} travelers) for personalized discovery
+
       if tour.images.length
-        section.section-gallery
+        section.section-gallery#gallery
           header.section-gallery__header
             div
               p.section-gallery__eyebrow Photo journal
@@ -179,7 +236,7 @@ html(lang='en')
                       | Interactive map is unavailable. Use the route stops list to explore the itinerary.
 
       if tour.reviews.length
-        section.section-reviews
+        section.section-reviews#reviews
           header.section-reviews__header
             div
               p.section-reviews__eyebrow Notes from the road
@@ -197,7 +254,7 @@ html(lang='en')
                     svg.reviews__star(class=star <= review.rating ? 'reviews__star--active' : 'reviews__star--inactive')
                       use(xlink:href='/img/icons.svg#icon-star')
 
-      section.section-cta
+      section.section-cta#book-tour
         .cta
           .cta__img.cta__img--logo
             img(src='/img/logo-white.png', alt='CarthageWay logo')
@@ -206,9 +263,127 @@ html(lang='en')
           if tour.images[0]
             img.cta__img.cta__img--2(src=`/img/tours/${tour.images[0]}`, alt='')
           .cta__content
-            h2.heading-secondary What are you waiting for?
-            p.cta__text= `${tour.duration} days. 1 adventure. Infinite memories. Make it yours today!`
-            button.btn.btn--green.span-all-rows(type='button') Book tour now!
+            .cta__copy
+              p.section-description__eyebrow Seamless Booking
+              h2.heading-secondary Ready for adventure?
+              p.cta__text= `${tour.duration} days of discovery in Tunisia. Hand-picked guides, scenic routes, and unforgettable local culture. Secure your departure today.`
+              .cta__perks
+                .cta__perk
+                  svg.cta__perk-icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-check-circle')
+                  span Free cancellation up to 48h prior
+                .cta__perk
+                  svg.cta__perk-icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-shield')
+                  span 100% Encrypted Stripe Checkout
+                .cta__perk
+                  svg.cta__perk-icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-zap')
+                  span Instant booking confirmation
+
+            - const firstAvailableDeparture = bookingDepartures.find((departure) => departure.seatsRemaining > 0)
+            - const bookingUnitPrice = tour.priceDiscount > 0 ? tour.priceDiscount : tour.price
+            - const bookingUnitAmountCents = Math.round(bookingUnitPrice * 100)
+
+            .booking-card
+              form.booking-form(
+                data-booking-form
+                data-tour-id=tour._id
+                data-authenticated=currentUser ? 'true' : 'false'
+                data-login-url='/login'
+              )
+                .booking-card__header
+                  .booking-card__price-box(data-unit-amount-cents=bookingUnitAmountCents)
+                    if tour.priceDiscount > 0
+                      .booking-card__discount-badge
+                        span.booking-card__strikethrough= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(tour.price)
+                        span.booking-card__discount-pill= `Save ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(tour.price - tour.priceDiscount)}`
+                    .booking-card__amount-row
+                      span.booking-card__price= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(bookingUnitPrice)
+                      span.booking-card__unit / traveler
+                  .booking-card__guarantee
+                    svg.booking-card__guarantee-icon(aria-hidden='true')
+                      use(xlink:href='/img/icons.svg#icon-award')
+                    span Best Price Guarantee
+
+                .booking-card__body
+                  if bookingDepartures.length
+                    .booking-form__group
+                      label.booking-form__label(for='booking-departure')
+                        svg.booking-form__label-icon(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-calendar')
+                        span Choose Departure Date
+                      .booking-form__select-wrap
+                        select#booking-departure.booking-form__control(name='departureDate', data-booking-date, required)
+                          each departure in bookingDepartures
+                            option(
+                              value=departure.date.toISOString()
+                              data-seats-remaining=departure.seatsRemaining
+                              disabled=departure.seatsRemaining === 0
+                              selected=departure === firstAvailableDeparture
+                            )= `${departure.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} — ${departure.seatsRemaining > 0 ? departure.seatsRemaining + ' seats remaining' : 'Fully booked'}`
+                      .booking-form__seat-status(data-seat-pill)
+                        if firstAvailableDeparture
+                          span.seat-status__dot(class=firstAvailableDeparture.seatsRemaining <= 3 ? 'seat-status__dot--urgent' : '')
+                          span.seat-status__text= `${firstAvailableDeparture.seatsRemaining} seats available for this date`
+
+                    .booking-form__group
+                      label.booking-form__label(for='booking-travelers')
+                        svg.booking-form__label-icon(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-users')
+                        span Number of Travelers
+                      .booking-stepper
+                        button.booking-stepper__btn(type='button', data-stepper-dec, aria-label='Decrease travelers') −
+                        input#booking-travelers.booking-stepper__input(
+                          type='number'
+                          name='travelers'
+                          min='1'
+                          max=firstAvailableDeparture ? firstAvailableDeparture.seatsRemaining : 1
+                          value='1'
+                          data-booking-travelers
+                          required
+                          readonly
+                        )
+                        button.booking-stepper__btn(type='button', data-stepper-inc, aria-label='Increase travelers') +
+                      p.booking-form__hint(data-traveler-hint)= `Max ${firstAvailableDeparture ? firstAvailableDeparture.seatsRemaining : 1} travelers based on available capacity`
+
+                    .booking-breakdown
+                      .booking-breakdown__row
+                        span.booking-breakdown__label(data-breakdown-formula)= `${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(bookingUnitPrice)} × 1 traveler`
+                        span.booking-breakdown__val(data-breakdown-subtotal)= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(bookingUnitPrice)
+                      .booking-breakdown__row
+                        span.booking-breakdown__label Booking & processing fee
+                        span.booking-breakdown__val.booking-breakdown__val--free Free
+                      .booking-breakdown__divider
+                      .booking-breakdown__row.booking-breakdown__row--total
+                        span Total due today
+                        strong.booking-breakdown__total(data-booking-total)= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(bookingUnitPrice)
+
+                    p.form__message.booking-form__message(data-booking-message, role='status', aria-live='polite')
+
+                    if currentUser
+                      button.btn.btn--green.booking-card__submit(type='submit', data-booking-submit)
+                        span.booking-card__submit-text Proceed to Checkout
+                        span.booking-card__submit-arrow &rarr;
+                    else
+                      button.btn.btn--green.booking-card__submit(type='submit', data-booking-submit)
+                        span.booking-card__submit-text Log in to Book
+                        span.booking-card__submit-arrow &rarr;
+                      p.booking-card__auth-note You will be returned directly here to complete your booking.
+
+                    .booking-card__trust
+                      span.booking-card__trust-item
+                        svg.booking-card__trust-icon(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-lock')
+                        | Powered by Stripe
+                      span.booking-card__trust-dot •
+                      span 256-bit SSL encrypted
+                  else
+                    .booking-card__empty
+                      svg.booking-card__empty-icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-calendar')
+                      p.booking-card__empty-title No Upcoming Departures
+                      p.booking-card__empty-text All current departure dates have passed or are fully booked. Check back soon for new scheduled dates!
 
     footer.footer
       .footer__logo

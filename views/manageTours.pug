@@ -1,0 +1,520 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title CarthageWay | #{title}
+
+  body
+    header.header
+      nav.nav.nav--tours
+        a.nav__el(href='/') All tours
+        a.nav__el(href='/manage/tours', aria-current='page') Manage tours
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user
+        a.nav__el.nav__el--profile(href='/me')
+          img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
+          span.nav__user-name= currentUser.name
+        button.nav__el(type='button', data-auth-logout) Log out
+        span(data-auth-status, role='status', aria-live='polite')
+
+    main.main
+      .user-view.admin-view
+        aside.user-view__menu.admin-view__menu
+          .admin-identity
+            .admin-identity__icon
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-shield')
+            h1.admin-identity__title Tour Console
+            p.admin-identity__role= currentUser.role.toUpperCase()
+            p.admin-identity__meta #{stats.total} tours registered
+
+          .admin-sidebar-stats
+            .admin-sidebar-stat
+              span.admin-sidebar-stat__label Published
+              span.admin-sidebar-stat__value= stats.publicCount
+            .admin-sidebar-stat
+              span.admin-sidebar-stat__label Secret
+              span.admin-sidebar-stat__value= stats.secretCount
+
+          ul.side-nav.admin-nav
+            li.side-nav--active
+              a(href='/manage/tours', aria-current='page')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-compass')
+                span Tour catalog
+                span.admin-nav__badge= totalTours
+            li
+              a(href='/manage/tours/new')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-plus-circle')
+                span Create new tour
+            li
+              a(href='/me')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-user')
+                span My profile
+            li
+              a(href='/', target='_blank', rel='noopener noreferrer')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-external-link')
+                span Live storefront
+
+        .user-view__content.admin-view__content
+          header.admin-header
+            .admin-header__titles
+              nav.admin-breadcrumbs(aria-label='Breadcrumbs')
+                a(href='/') Home
+                span(aria-hidden='true') /
+                span Tour Management
+              h2.heading-secondary.admin-header__title Tour Management Console
+              p.admin-header__subtitle Monitor, search, filter, and modify CarthageWay guided tours across Tunisia.
+            .admin-header__actions
+              a.btn.btn--green.btn--small.admin-header__cta(href='/manage/tours/new')
+                svg.btn__icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-plus')
+                span New Tour
+
+          //- KPI Metric Summary Cards
+          section.admin-kpis(aria-label='Key Performance Indicators')
+            .admin-kpi-card
+              .admin-kpi-card__header
+                span.admin-kpi-card__label Total Catalog
+                .admin-kpi-card__icon.admin-kpi-card__icon--green
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-compass')
+              .admin-kpi-card__value= stats.total
+              .admin-kpi-card__footer All registered tours
+
+            .admin-kpi-card
+              .admin-kpi-card__header
+                span.admin-kpi-card__label Published Live
+                .admin-kpi-card__icon.admin-kpi-card__icon--emerald
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-eye')
+              .admin-kpi-card__value= stats.publicCount
+              .admin-kpi-card__footer Publicly bookable
+
+            .admin-kpi-card
+              .admin-kpi-card__header
+                span.admin-kpi-card__label Secret Tours
+                .admin-kpi-card__icon.admin-kpi-card__icon--amber
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-eye-off')
+              .admin-kpi-card__value= stats.secretCount
+              .admin-kpi-card__footer Staff & VIP only
+
+            .admin-kpi-card
+              .admin-kpi-card__header
+                span.admin-kpi-card__label Average Tariff
+                .admin-kpi-card__icon.admin-kpi-card__icon--blue
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-tag')
+              .admin-kpi-card__value #{stats.avgPrice.toLocaleString()} TND
+              .admin-kpi-card__footer Base package price
+
+            .admin-kpi-card
+              .admin-kpi-card__header
+                span.admin-kpi-card__label Overall Rating
+                .admin-kpi-card__icon.admin-kpi-card__icon--gold
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-star')
+              .admin-kpi-card__value ★ #{stats.avgRating}
+              .admin-kpi-card__footer Customer satisfaction
+
+          //- Search, Filter, Sort Toolbar
+          section.admin-toolbar-section(aria-label='Filter and search toolbar')
+            form.admin-toolbar(method='GET', action='/manage/tours', data-filter-form)
+              input(type='hidden', name='view', value=filters.view, data-view-input)
+
+              .admin-toolbar__search
+                svg.admin-toolbar__search-icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-search')
+                input#manage-tour-search.admin-toolbar__search-input(
+                  type='search',
+                  name='search',
+                  value=filters.search,
+                  placeholder='Search by tour name, summary, or region...',
+                  autocomplete='off'
+                )
+                if filters.search
+                  button.admin-toolbar__clear-btn(type='button', data-clear-search, aria-label='Clear search query') &times;
+
+              .admin-toolbar__filters
+                .admin-select-wrapper
+                  label.admin-select-label(for='filter-difficulty') Difficulty
+                  select#filter-difficulty.admin-select(name='difficulty', data-auto-submit)
+                    option(value='all', selected= filters.difficulty === 'all') All Difficulties
+                    option(value='easy', selected= filters.difficulty === 'easy') Easy
+                    option(value='medium', selected= filters.difficulty === 'medium') Medium
+                    option(value='difficult', selected= filters.difficulty === 'difficult') Difficult
+
+                .admin-select-wrapper
+                  label.admin-select-label(for='filter-status') Visibility
+                  select#filter-status.admin-select(name='status', data-auto-submit)
+                    option(value='all', selected= filters.status === 'all') All Statuses
+                    option(value='public', selected= filters.status === 'public') Public Only
+                    option(value='secret', selected= filters.status === 'secret') Secret Only
+
+                .admin-select-wrapper
+                  label.admin-select-label(for='filter-sort') Sort By
+                  select#filter-sort.admin-select(name='sort', data-auto-submit)
+                    option(value='-createdAt', selected= filters.sort === '-createdAt') Newest First
+                    option(value='createdAt', selected= filters.sort === 'createdAt') Oldest First
+                    option(value='price', selected= filters.sort === 'price') Price: Low to High
+                    option(value='-price', selected= filters.sort === '-price') Price: High to Low
+                    option(value='-ratingsAverage', selected= filters.sort === '-ratingsAverage') Highest Rated
+                    option(value='duration', selected= filters.sort === 'duration') Shortest Duration
+                    option(value='-duration', selected= filters.sort === '-duration') Longest Duration
+                    option(value='name', selected= filters.sort === 'name') Title: A to Z
+
+                button.btn.btn--small.btn--green.admin-toolbar__submit(type='submit') Apply
+
+              .admin-toolbar__view-switch(role='group', aria-label='View layout switcher')
+                button.admin-view-btn(
+                  type='button',
+                  data-view-btn='grid',
+                  class= filters.view === 'grid' ? 'is-active' : '',
+                  aria-pressed= filters.view === 'grid' ? 'true' : 'false',
+                  title='Card Grid View'
+                )
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-grid')
+                  span.sr-only Grid View
+                button.admin-view-btn(
+                  type='button',
+                  data-view-btn='table',
+                  class= filters.view === 'table' ? 'is-active' : '',
+                  aria-pressed= filters.view === 'table' ? 'true' : 'false',
+                  title='Compact Table View'
+                )
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-list')
+                  span.sr-only Table View
+
+            //- Active Filter Chips Bar
+            if filters.search || filters.difficulty !== 'all' || filters.status !== 'all' || filters.sort !== '-createdAt'
+              .admin-active-filters
+                span.admin-active-filters__label Active filters:
+                if filters.search
+                  span.admin-chip
+                    span Query: "#{filters.search}"
+                    a.admin-chip__remove(href=`/manage/tours?difficulty=${filters.difficulty}&status=${filters.status}&sort=${filters.sort}&view=${filters.view}`, aria-label='Remove search filter') &times;
+                if filters.difficulty !== 'all'
+                  span.admin-chip
+                    span Difficulty: #{filters.difficulty}
+                    a.admin-chip__remove(href=`/manage/tours?${filters.search ? `search=${encodeURIComponent(filters.search)}&` : ''}difficulty=all&status=${filters.status}&sort=${filters.sort}&view=${filters.view}`, aria-label='Remove difficulty filter') &times;
+                if filters.status !== 'all'
+                  span.admin-chip
+                    span Status: #{filters.status}
+                    a.admin-chip__remove(href=`/manage/tours?${filters.search ? `search=${encodeURIComponent(filters.search)}&` : ''}difficulty=${filters.difficulty}&status=all&sort=${filters.sort}&view=${filters.view}`, aria-label='Remove status filter') &times;
+                if filters.sort !== '-createdAt'
+                  span.admin-chip
+                    span Sorted
+                    a.admin-chip__remove(href=`/manage/tours?${filters.search ? `search=${encodeURIComponent(filters.search)}&` : ''}difficulty=${filters.difficulty}&status=${filters.status}&sort=-createdAt&view=${filters.view}`, aria-label='Reset sorting') &times;
+                a.admin-active-filters__clear-all(href='/manage/tours') Reset all
+
+          //- Results Status Bar
+          .admin-results-bar
+            p.admin-results-bar__count
+              strong= totalTours
+              |  #{totalTours === 1 ? 'tour found' : 'tours found'}
+              if totalTours > 0
+                span.admin-results-bar__paging  (page #{page} of #{totalPages})
+
+          //- Tour Catalog Content
+          if tours.length
+            //- GRID VIEW
+            .admin-tours-grid(data-view-container='grid', class= filters.view === 'table' ? 'is-hidden' : '')
+              each tour in tours
+                article.admin-card(data-tour-card-id=tour._id)
+                  .admin-card__media
+                    img.admin-card__img(src=`/img/tours/${tour.imageCover}`, alt=tour.name, loading='lazy')
+                    .admin-card__badges
+                      if tour.secretTour
+                        span.admin-badge.admin-badge--secret
+                          svg.admin-badge__icon(aria-hidden='true')
+                            use(xlink:href='/img/icons.svg#icon-eye-off')
+                          span Secret Tour
+                      else
+                        span.admin-badge.admin-badge--public
+                          svg.admin-badge__icon(aria-hidden='true')
+                            use(xlink:href='/img/icons.svg#icon-eye')
+                          span Published
+
+                      span.admin-badge(class=`admin-badge--${tour.difficulty}`)= tour.difficulty
+
+                    button.admin-card__quick-toggle(
+                      type='button',
+                      data-quick-toggle-secret=tour._id,
+                      data-current-secret=`${Boolean(tour.secretTour)}`,
+                      title= tour.secretTour ? 'Click to make Public' : 'Click to make Secret',
+                      aria-label= tour.secretTour ? 'Publish tour publicly' : 'Hide tour as secret'
+                    )
+                      svg(aria-hidden='true')
+                        use(xlink:href= tour.secretTour ? '/img/icons.svg#icon-eye' : '/img/icons.svg#icon-eye-off')
+
+                  .admin-card__body
+                    .admin-card__title-row
+                      h3.admin-card__title
+                        a(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='View public tour page')
+                          span= tour.name
+                          svg.admin-card__ext-icon(aria-hidden='true')
+                            use(xlink:href='/img/icons.svg#icon-external-link')
+
+                    p.admin-card__summary= tour.summary
+
+                    .admin-card__meta-grid
+                      .admin-card__meta-item(title='Start Location')
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-map-pin')
+                        span= (tour.startLocation && tour.startLocation.description) ? tour.startLocation.description : 'Tunisia'
+
+                      .admin-card__meta-item(title='Tour Duration')
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-clock')
+                        span= `${tour.duration} days`
+
+                      .admin-card__meta-item(title='Group Capacity')
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-users')
+                        span= `Max ${tour.maxGroupSize} pax`
+
+                      .admin-card__meta-item(title='Customer Ratings')
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-star')
+                        span= `★ ${tour.ratingsAverage ? tour.ratingsAverage.toFixed(1) : '0.0'} (${tour.ratingsQuantity || 0})`
+
+                    .admin-card__pricing-row
+                      .admin-card__price-box
+                        span.admin-card__price-currency TND
+                        span.admin-card__price-amount= tour.price.toLocaleString()
+                        if tour.priceDiscount
+                          span.admin-card__price-original #{tour.priceDiscount.toLocaleString()} TND
+                          span.admin-card__discount-pill Discounted
+
+                      if tour.guides && tour.guides.length
+                        .admin-card__guides(title=`Assigned guides: ${tour.guides.map(g => g.name).join(', ')}`)
+                          each guide in tour.guides.slice(0, 3)
+                            img.admin-card__guide-avatar(src=`/img/users/${guide.photo || 'default.jpg'}`, alt=guide.name, title=guide.name)
+                          if tour.guides.length > 3
+                            span.admin-card__guide-overflow +#{tour.guides.length - 3}
+
+                  .admin-card__actions
+                    a.btn.btn--small.btn--white.admin-card__btn(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='Preview Public Tour')
+                      svg.btn__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-eye')
+                      span View
+
+                    a.btn.btn--small.btn--green.admin-card__btn(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour Details')
+                      svg.btn__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-edit')
+                      span Edit
+
+                    button.btn.btn--small.btn--red.admin-card__btn(
+                      type='button',
+                      data-delete-modal-trigger,
+                      data-tour-id=tour._id,
+                      data-tour-name=tour.name,
+                      data-tour-cover=tour.imageCover,
+                      title='Delete Tour'
+                    )
+                      svg.btn__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-trash-2')
+                      span Delete
+
+            //- TABLE VIEW
+            .admin-tours-table-container(data-view-container='table', class= filters.view === 'table' ? '' : 'is-hidden')
+              table.admin-table
+                thead
+                  tr
+                    th(scope='col') Tour Details
+                    th(scope='col') Visibility
+                    th(scope='col') Difficulty
+                    th(scope='col') Duration & Group
+                    th(scope='col') Price
+                    th(scope='col') Rating
+                    th(scope='col') Guides
+                    th(scope='col', class='right') Actions
+                tbody
+                  each tour in tours
+                    tr(data-tour-row-id=tour._id)
+                      td
+                        .admin-table-tour
+                          img.admin-table-tour__thumb(src=`/img/tours/${tour.imageCover}`, alt=tour.name, loading='lazy')
+                          .admin-table-tour__info
+                            a.admin-table-tour__name(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer')= tour.name
+                            span.admin-table-tour__location= (tour.startLocation && tour.startLocation.description) ? tour.startLocation.description : 'Tunisia'
+
+                      td
+                        button.admin-table__status-toggle(
+                          type='button',
+                          data-quick-toggle-secret=tour._id,
+                          data-current-secret=`${Boolean(tour.secretTour)}`,
+                          title= tour.secretTour ? 'Secret Tour - click to publish' : 'Published Tour - click to make secret'
+                        )
+                          if tour.secretTour
+                            span.admin-badge.admin-badge--secret
+                              svg.admin-badge__icon(aria-hidden='true')
+                                use(xlink:href='/img/icons.svg#icon-eye-off')
+                              span Secret
+                          else
+                            span.admin-badge.admin-badge--public
+                              svg.admin-badge__icon(aria-hidden='true')
+                                use(xlink:href='/img/icons.svg#icon-eye')
+                              span Public
+
+                      td
+                        span.admin-badge(class=`admin-badge--${tour.difficulty}`)= tour.difficulty
+
+                      td
+                        .admin-table__meta-cell
+                          span #{tour.duration} days
+                          small Max #{tour.maxGroupSize} pax
+
+                      td
+                        .admin-table__price-cell
+                          span.admin-table__price-main #{tour.price.toLocaleString()} TND
+                          if tour.priceDiscount
+                            small.admin-table__price-discount #{tour.priceDiscount.toLocaleString()} TND
+
+                      td
+                        .admin-table__rating
+                          span ★ #{tour.ratingsAverage ? tour.ratingsAverage.toFixed(1) : '0.0'}
+                          small (#{tour.ratingsQuantity || 0})
+
+                      td
+                        if tour.guides && tour.guides.length
+                          .admin-card__guides
+                            each guide in tour.guides.slice(0, 2)
+                              img.admin-card__guide-avatar(src=`/img/users/${guide.photo || 'default.jpg'}`, alt=guide.name, title=guide.name)
+                            if tour.guides.length > 2
+                              span.admin-card__guide-overflow +#{tour.guides.length - 2}
+                        else
+                          span.admin-table__empty-dash —
+
+                      td.right
+                        .admin-table__actions
+                          a.admin-icon-btn(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='View Public Page')
+                            svg(aria-hidden='true')
+                              use(xlink:href='/img/icons.svg#icon-external-link')
+                          a.admin-icon-btn.admin-icon-btn--edit(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour')
+                            svg(aria-hidden='true')
+                              use(xlink:href='/img/icons.svg#icon-edit')
+                          button.admin-icon-btn.admin-icon-btn--delete(
+                            type='button',
+                            data-delete-modal-trigger,
+                            data-tour-id=tour._id,
+                            data-tour-name=tour.name,
+                            data-tour-cover=tour.imageCover,
+                            title='Delete Tour'
+                          )
+                            svg(aria-hidden='true')
+                              use(xlink:href='/img/icons.svg#icon-trash-2')
+
+          else
+            //- Zero Results / Empty State
+            section.admin-empty-state
+              .admin-empty-state__icon
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-compass')
+              h3.heading-secondary No tours found
+              if filters.search || filters.difficulty !== 'all' || filters.status !== 'all'
+                p.admin-empty-state__text We couldn't find any tours matching your active filters. Try adjusting your query or resetting all filters.
+                .admin-empty-state__actions
+                  a.btn.btn--green.btn--small(href='/manage/tours') Reset all filters
+                  a.btn.btn--white.btn--small(href='/manage/tours/new') Create new tour
+              else
+                p.admin-empty-state__text You haven't added any tours to CarthageWay yet. Get started by creating your first guided tour!
+                .admin-empty-state__actions
+                  a.btn.btn--green.btn--small(href='/manage/tours/new') Create your first tour
+
+          //- Accessible Pagination
+          if totalPages > 1
+            nav.admin-pagination(aria-label='Tour catalog pagination')
+              .admin-pagination__info
+                | Page #[strong #{page}] of #[strong #{totalPages}] (Total #{totalTours} tours)
+
+              .admin-pagination__controls
+                if page > 1
+                  - const prevQuery = `page=${page - 1}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}${filters.difficulty !== 'all' ? `&difficulty=${filters.difficulty}` : ''}${filters.status !== 'all' ? `&status=${filters.status}` : ''}${filters.sort !== '-createdAt' ? `&sort=${filters.sort}` : ''}${filters.view !== 'grid' ? `&view=${filters.view}` : ''}`
+                  a.admin-pagination__btn.admin-pagination__btn--prev(href=`/manage/tours?${prevQuery}`, aria-label='Previous page')
+                    svg(aria-hidden='true')
+                      use(xlink:href='/img/icons.svg#icon-chevron-left')
+                    span Previous
+                else
+                  span.admin-pagination__btn.admin-pagination__btn--disabled(aria-disabled='true')
+                    svg(aria-hidden='true')
+                      use(xlink:href='/img/icons.svg#icon-chevron-left')
+                    span Previous
+
+                ul.admin-pagination__pages
+                  - const startPage = Math.max(1, page - 2)
+                  - const endPage = Math.min(totalPages, page + 2)
+                  each p in Array.from({ length: (endPage - startPage + 1) }, (_, i) => startPage + i)
+                    - const pageQuery = `page=${p}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}${filters.difficulty !== 'all' ? `&difficulty=${filters.difficulty}` : ''}${filters.status !== 'all' ? `&status=${filters.status}` : ''}${filters.sort !== '-createdAt' ? `&sort=${filters.sort}` : ''}${filters.view !== 'grid' ? `&view=${filters.view}` : ''}`
+                    li
+                      if p === page
+                        span.admin-pagination__page.is-current(aria-current='page')= p
+                      else
+                        a.admin-pagination__page(href=`/manage/tours?${pageQuery}`)= p
+
+                if page < totalPages
+                  - const nextQuery = `page=${page + 1}${filters.search ? `&search=${encodeURIComponent(filters.search)}` : ''}${filters.difficulty !== 'all' ? `&difficulty=${filters.difficulty}` : ''}${filters.status !== 'all' ? `&status=${filters.status}` : ''}${filters.sort !== '-createdAt' ? `&sort=${filters.sort}` : ''}${filters.view !== 'grid' ? `&view=${filters.view}` : ''}`
+                  a.admin-pagination__btn.admin-pagination__btn--next(href=`/manage/tours?${nextQuery}`, aria-label='Next page')
+                    span Next
+                    svg(aria-hidden='true')
+                      use(xlink:href='/img/icons.svg#icon-chevron-right')
+                else
+                  span.admin-pagination__btn.admin-pagination__btn--disabled(aria-disabled='true')
+                    span Next
+                    svg(aria-hidden='true')
+                      use(xlink:href='/img/icons.svg#icon-chevron-right')
+
+    //- Native Accessible Delete Confirmation Dialog
+    dialog.admin-dialog(data-delete-dialog, aria-labelledby='dialog-delete-title', aria-describedby='dialog-delete-desc')
+      form.admin-dialog__form(method='dialog')
+        .admin-dialog__header
+          .admin-dialog__icon.admin-dialog__icon--danger
+            svg(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-alert-triangle')
+          h3#dialog-delete-title.admin-dialog__title Delete Tour
+          button.admin-dialog__close(type='button', data-delete-dialog-cancel, aria-label='Close dialog') &times;
+
+        .admin-dialog__content
+          .admin-dialog__tour-preview
+            img.admin-dialog__thumb(src='/img/tours/tour-default.jpg', alt='', data-delete-dialog-img)
+            div
+              h4.admin-dialog__tour-name(data-delete-dialog-name) Tour Name
+              p.admin-dialog__tour-warning Permanent catalog deletion
+
+          p#dialog-delete-desc.admin-dialog__desc
+            | Are you sure you want to permanently delete this tour? This will remove all associated gallery images, schedules, and reviews. This action #[strong cannot be undone].
+
+        .admin-dialog__actions
+          button.btn.btn--small.btn--white(type='button', data-delete-dialog-cancel) Cancel
+          button.btn.btn--small.btn--red(type='button', data-delete-dialog-confirm)
+            svg.btn__icon(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-trash-2')
+            span Confirm Delete
+
+    //- Floating Toast Notification Area
+    .admin-toast-container(data-toast-container, role='status', aria-live='polite')
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
+
+    script(src='/js/auth.js', defer)
+    script(src='/js/tourManagement.js', defer)

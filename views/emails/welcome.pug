@@ -1,0 +1,12 @@
+extends ./layout.pug
+
+block emailContent
+  h1(style='margin:0 0 16px;color:#18332a;font-size:28px;line-height:36px;font-weight:700;') Welcome, #{name}
+  p(style='margin:0 0 24px;color:#4f625a;font-size:16px;line-height:25px;') Your CarthageWay account is ready. Sign in to explore guided journeys, discover local experiences, and plan your next trip through Tunisia.
+  table(role='presentation', cellpadding='0', cellspacing='0', border='0', style='border-collapse:separate;')
+    tbody
+      tr
+        td(align='center', style='border-radius:5px;background:#16834b;')
+          a(href=loginUrl, style='display:inline-block;padding:13px 22px;border:1px solid #16834b;border-radius:5px;color:#ffffff;font-size:15px;font-weight:700;line-height:20px;text-decoration:none;') Explore CarthageWay
+  p(style='margin:24px 0 6px;color:#697b73;font-size:13px;line-height:20px;') If the button does not work, open this address:
+  p(style='margin:0;color:#155c42;font-size:13px;line-height:20px;word-break:break-all;')= loginUrl

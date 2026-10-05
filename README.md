@@ -268,14 +268,14 @@ When code expects `req.query.sort.split(',')`, accessing string methods on an Ar
 
 ### Layer 6: Hardened Cookies (HTTP-Only, Secure, SameSite)
 
-Tokens issued by `authController.createSendToken` are returned in an HTTP response cookie configured with strict security flags:
+Tokens issued by `authController.createSendToken` are returned in an HTTP response cookie configured with security flags:
 
 ```javascript
 // controllers/authController.js
 res.cookie('jwt', token, {
    httpOnly: true, // Prevents document.cookie access from JavaScript (mitigates XSS token theft)
    secure: true, // Only transmitted across encrypted TLS/HTTPS connections
-   sameSite: 'strict', // Blocks cross-site transmission (mitigates CSRF attacks)
+   sameSite: 'lax', // Allows secure top-level returns from Stripe Checkout while excluding cross-site POSTs
    maxAge: getCookieMaxAge(), // Configurable expiration window
 });
 ```
@@ -578,7 +578,9 @@ sequenceDiagram
     Auth-->>User: 200 OK Generic Success Message
 
     Note over User, Auth: User clicks reset link in email
-    User->>Auth: PATCH /resetPassword/:token { password, passwordConfirm }
+   User->>Web: GET /reset-password/:token
+   Web-->>User: Branded password reset form
+   User->>Auth: PATCH /api/v1/users/resetPassword/:token { password, passwordConfirm }
     Auth->>Crypto: Hash params.token with SHA-256
     Auth->>DB: Query user with matching hashed token & passwordResetExpires > now
     Auth->>DB: Update password, clear reset token & expiry, save
@@ -779,16 +781,27 @@ GLOBAL_RATE_LIMIT_MAX=100           # 100 requests per IP
 RATE_LIMIT_WINDOW_MS=900000        # 15 minutes
 AUTH_RATE_LIMIT_MAX=10             # 10 attempts per IP
 
-# Email Service (Mailtrap for dev, SendGrid/Postmark for prod)
+# Transactional Email (Mailtrap by default in development, Resend API in production)
+EMAIL_PROVIDER=mailtrap
 MAILTRAP_HOST=sandbox.smtp.mailtrap.io
 MAILTRAP_PORT=2525
 MAILTRAP_USERNAME=your_mailtrap_username
 MAILTRAP_PASSWORD=your_mailtrap_password
-EMAIL_FROM=noreply@example.com
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM=onboarding@resend.dev
+EMAIL_FROM="CarthageWay <noreply@your-verified-domain.com>"
 
-# Password Reset URL
-PASSWORD_RESET_URL=http://localhost:7000/api/v1/users/resetPassword
+# Public password reset page; the one-time token is appended by the server
+PASSWORD_RESET_URL=http://localhost:7000/reset-password
 ```
+
+In development, set `EMAIL_PROVIDER=resend` to test with Resend instead of
+Mailtrap. The default `RESEND_FROM=onboarding@resend.dev` can only send to the
+email address associated with your Resend account. Production always uses
+Resend and requires `RESEND_API_KEY` plus a verified sender/domain in
+`EMAIL_FROM`. Keep provider credentials in the deployment secret store, not in
+source control. Signup sends a welcome email on a best-effort basis; reset
+links expire after 10 minutes and can only be used once.
 
 ---
 
@@ -928,7 +941,20 @@ Base URL: `/api/v1`
 
 ---
 
+### Booking & Checkout Routes
+
+| Method | Endpoint                     | Protection       | Description                                                         |
+| :----- | :--------------------------- | :--------------- | :------------------------------------------------------------------ |
+| `POST` | `/bookings/checkout-session` | `protect`        | Reserve seats and create a EUR Checkout Session using server prices |
+| `POST` | `/bookings/webhook`          | Stripe signature | Confirm paid bookings and release expired reservations              |
+
+The browser return pages are `/booking/success`, `/booking/cancel`, and `/my-bookings`. The success page does not confirm payment; only a verified Stripe webhook can do that.
+
+---
+
 ### Testing Example Requests
+
+Run the complete automated test suite with `npm test`.
 
 #### 1. User Signup
 
@@ -1015,12 +1041,17 @@ curl -X PATCH http://localhost:7000/api/v1/users/updateMe \
    RATE_LIMIT_WINDOW_MS=900000
    AUTH_RATE_LIMIT_MAX=10
 
-   PASSWORD_RESET_URL=http://localhost:7000/api/v1/users/resetPassword
+   PASSWORD_RESET_URL=http://localhost:7000/reset-password
+   APP_BASE_URL=http://localhost:7000
+   STRIPE_SECRET_KEY=sk_test_your_test_secret_key
+   STRIPE_WEBHOOK_SECRET=whsec_from_stripe_cli
    MAILTRAP_HOST=sandbox.smtp.mailtrap.io
    MAILTRAP_PORT=2525
    MAILTRAP_USERNAME=your_mailtrap_username
    MAILTRAP_PASSWORD=your_mailtrap_password
-   EMAIL_FROM=noreply@natours.io
+   RESEND_API_KEY=your_resend_api_key
+   RESEND_FROM=onboarding@resend.dev
+   EMAIL_FROM="CarthageWay <noreply@your-verified-domain.com>"
    ```
 
 4. **Start the development server:**
@@ -1030,6 +1061,23 @@ curl -X PATCH http://localhost:7000/api/v1/users/updateMe \
    ```
 
    The API server will boot up and listen on `http://localhost:7000`.
+
+### Local Stripe Checkout (test mode)
+
+Tour prices are treated as EUR amounts for Checkout. Add a Stripe test secret key to `config.env`; do not use a live key during local development. The app creates one-time Checkout Sessions and records bookings only after a signed webhook confirms payment.
+
+1. Start the app with `APP_BASE_URL=http://localhost:7000` and `STRIPE_SECRET_KEY=sk_test_...` in `config.env`.
+2. In a second terminal, authenticate the Stripe CLI and forward webhook events:
+
+   ```bash
+   stripe login
+   stripe listen --forward-to localhost:7000/api/v1/bookings/webhook
+   ```
+
+3. Copy the `whsec_...` signing secret printed by `stripe listen` into `STRIPE_WEBHOOK_SECRET` in `config.env`, then restart the app.
+4. Log into the app, open a tour, choose a future departure and party size, and select **Book tour now**. Complete Checkout with a Stripe test card such as `4242 4242 4242 4242` and any future expiry/CVC.
+
+The listener must remain running while testing. Stripe live processing is not enabled; EUR Checkout still requires a Stripe account registered in a supported business country.
 
 5. **Debug mode (Optional):**
    ```bash

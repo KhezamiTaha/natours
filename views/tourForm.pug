@@ -1,0 +1,488 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    script(src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js')
+    title CarthageWay | #{title}
+
+  body
+    header.header
+      nav.nav.nav--tours
+        a.nav__el(href='/') All tours
+        a.nav__el(href='/manage/tours') Manage tours
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user
+        a.nav__el.nav__el--profile(href='/me')
+          img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
+          span.nav__user-name= currentUser.name
+        button.nav__el(type='button', data-auth-logout) Log out
+        span(data-auth-status, role='status', aria-live='polite')
+
+    main.main
+      .user-view.admin-view
+        aside.user-view__menu.admin-view__menu
+          .admin-identity
+            .admin-identity__icon
+              svg(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-edit-3')
+            h1.admin-identity__title= mode === 'edit' ? 'Edit Tour' : 'New Tour'
+            p.admin-identity__role= currentUser.role.toUpperCase()
+            p.admin-identity__meta= mode === 'edit' ? tour.name : 'Create a fresh itinerary'
+
+          ul.side-nav.admin-nav
+            li
+              a(href='/manage/tours')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-compass')
+                span Tour catalog
+            li.side-nav--active
+              a(href= mode === 'edit' ? `/manage/tours/${tour._id}/edit` : '/manage/tours/new', aria-current='page')
+                svg(aria-hidden='true')
+                  use(xlink:href= mode === 'edit' ? '/img/icons.svg#icon-edit' : '/img/icons.svg#icon-plus-circle')
+                span= mode === 'edit' ? 'Edit details' : 'Create tour'
+            if mode === 'edit'
+              li
+                a(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer')
+                  svg(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-external-link')
+                  span View public page
+            li
+              a(href='/me')
+                svg(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-user')
+                span My profile
+
+        .user-view__content.admin-view__content
+          header.admin-header
+            .admin-header__titles
+              nav.admin-breadcrumbs(aria-label='Breadcrumbs')
+                a(href='/manage/tours') Tours Console
+                span(aria-hidden='true') /
+                span= mode === 'edit' ? `Edit: ${tour.name}` : 'New Tour'
+              h2.heading-secondary.admin-header__title= mode === 'edit' ? `Update "${tour.name}"` : 'Create a New Guided Tour'
+              p.admin-header__subtitle Fill in tour details, location coordinates, pricing, guides, and upload high-resolution media.
+            .admin-header__actions
+              a.btn.btn--white.btn--small(href='/manage/tours')
+                svg.btn__icon(aria-hidden='true')
+                  use(xlink:href='/img/icons.svg#icon-arrow-left')
+                span Back to Catalog
+              if mode === 'edit'
+                a.btn.btn--white.btn--small(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer')
+                  svg.btn__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-external-link')
+                  span View Live
+
+          form.admin-editor-form(
+            data-tour-form
+            data-endpoint= mode === 'edit' ? `/api/v1/tours/${tour._id}` : '/api/v1/tours'
+            data-method= mode === 'edit' ? 'PATCH' : 'POST'
+            data-mapbox-token= mapboxToken
+            enctype='multipart/form-data'
+          )
+            .admin-editor-grid
+              //- Left Column: Content, Itinerary, Location, Guides
+              .admin-editor-main
+                //- 1. Basic Information
+                section.admin-section-card
+                  .admin-section-card__header
+                    .admin-section-card__icon
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-file-text')
+                    h3.admin-section-card__title General Information
+                  .admin-section-card__body
+                    .form__group
+                      label.form__label(for='tour-name') Tour Name #[span.form__required *]
+                      input#tour-name.form__input(
+                        type='text',
+                        name='name',
+                        value= tour ? tour.name : '',
+                        placeholder='e.g. The Carthage & Sidi Bou Said Odyssey',
+                        required,
+                        minlength='10',
+                        maxlength='40'
+                      )
+
+                    .form__row.form__row--2
+                      .form__group
+                        label.form__label(for='tour-duration') Duration (Days) #[span.form__required *]
+                        input#tour-duration.form__input(
+                          type='number',
+                          name='duration',
+                          value= tour ? tour.duration : '',
+                          min='1',
+                          placeholder='e.g. 5',
+                          required
+                        )
+                      .form__group
+                        label.form__label(for='tour-maxGroupSize') Max Group Size #[span.form__required *]
+                        input#tour-maxGroupSize.form__input(
+                          type='number',
+                          name='maxGroupSize',
+                          value= tour ? tour.maxGroupSize : '',
+                          min='1',
+                          placeholder='e.g. 15',
+                          required
+                        )
+
+                    .form__group
+                      label.form__label(for='tour-summary') Short Summary #[span.form__required *]
+                      textarea#tour-summary.form__input.form__input--textarea(
+                        name='summary',
+                        rows='2',
+                        placeholder='A captivating overview of the itinerary that appears on card previews...',
+                        required
+                      )= tour ? tour.summary : ''
+
+                    .form__group
+                      label.form__label(for='tour-description') Detailed Description
+                      textarea#tour-description.form__input.form__input--textarea(
+                        name='description',
+                        rows='5',
+                        placeholder='Full day-by-day description, historical significance, cultural context, and requirements...'
+                      )= tour ? tour.description : ''
+
+                    .form__group
+                      label.form__label Difficulty Level #[span.form__required *]
+                      .admin-difficulty-radios
+                        label.admin-difficulty-card
+                          input(type='radio', name='difficulty', value='easy', checked= (!tour || tour.difficulty === 'easy'))
+                          .admin-difficulty-card__content
+                            span.admin-badge.admin-badge--easy Easy
+                            small Leisurely walks, gentle pace
+                        label.admin-difficulty-card
+                          input(type='radio', name='difficulty', value='medium', checked= (tour && tour.difficulty === 'medium'))
+                          .admin-difficulty-card__content
+                            span.admin-badge.admin-badge--medium Medium
+                            small Moderate hiking, varied terrain
+                        label.admin-difficulty-card
+                          input(type='radio', name='difficulty', value='difficult', checked= (tour && tour.difficulty === 'difficult'))
+                          .admin-difficulty-card__content
+                            span.admin-badge.admin-badge--difficult Difficult
+                            small High endurance, rocky trails
+
+                //- 2. Location & Coordinates with Tunisia Quick-Picks
+                section.admin-section-card
+                  .admin-section-card__header.admin-section-card__header--split
+                    .admin-section-card__header-left
+                      .admin-section-card__icon
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-map-pin')
+                      div
+                        h3.admin-section-card__title Starting Location & Meeting Point
+                        p.admin-section-card__subtitle The departure point where travelers meet the guide
+                    button.btn.btn--small.btn--outline(type='button', data-open-map-picker='start')
+                      svg.btn__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-map')
+                      span Pick on Tunisia Map
+                  .admin-section-card__body
+                    .admin-presets
+                      span.admin-presets__label Quick Tunisian Presets:
+                      .admin-presets__chips
+                        button.admin-preset-chip(type='button', data-preset-desc='Carthage, Tunis', data-preset-addr='Avenue Habib Bourguiba, Carthage', data-preset-coords='10.3248,36.8528') 🏛️ Carthage
+                        button.admin-preset-chip(type='button', data-preset-desc='Tunis Medina', data-preset-addr='Rue Jamaa Zitouna, Tunis', data-preset-coords='10.1658,36.7988') 🕌 Tunis
+                        button.admin-preset-chip(type='button', data-preset-desc='Sidi Bou Said', data-preset-addr='Rue Habib Thameur, Sidi Bou Said', data-preset-coords='10.3418,36.8702') 🌊 Sidi Bou Said
+                        button.admin-preset-chip(type='button', data-preset-desc='Djerba Island', data-preset-addr='Houmt Souk, Djerba', data-preset-coords='10.8574,33.8076') 🌴 Djerba
+                        button.admin-preset-chip(type='button', data-preset-desc='Tozeur Desert Oasis', data-preset-addr='Palmeraie, Tozeur', data-preset-coords='8.1339,33.9197') 🏜️ Tozeur
+                        button.admin-preset-chip(type='button', data-preset-desc='Matmata Troglodytes', data-preset-addr='Old Matmata, Gabes', data-preset-coords='9.9714,33.5434') 🏕️ Matmata
+
+                    .form__row.form__row--2
+                      .form__group
+                        label.form__label(for='tour-startLocationDescription') Location Label #[span.form__required *]
+                        input#tour-startLocationDescription.form__input(
+                          type='text',
+                          name='startLocation[description]',
+                          value= (tour && tour.startLocation) ? tour.startLocation.description : '',
+                          placeholder='e.g. Carthage, Tunis',
+                          data-loc-desc
+                        )
+                      .form__group
+                        label.form__label(for='tour-startLocationCoordinates') GeoJSON Coordinates (Lng, Lat) #[span.form__required *]
+                        input#tour-startLocationCoordinates.form__input(
+                          type='text',
+                          name='startLocation[coordinates]',
+                          value= (tour && tour.startLocation && tour.startLocation.coordinates) ? tour.startLocation.coordinates.join(', ') : '',
+                          placeholder='e.g. 10.3248, 36.8528',
+                          data-loc-coords
+                        )
+
+                    .form__group
+                      label.form__label(for='tour-startLocationAddress') Meeting Point Address
+                      input#tour-startLocationAddress.form__input(
+                        type='text',
+                        name='startLocation[address]',
+                        value= (tour && tour.startLocation) ? tour.startLocation.address : '',
+                        placeholder='Physical meeting point address (optional)',
+                        data-loc-addr
+                      )
+
+                //- 3. Trip Itinerary Stops & Multi-Day Locations
+                section.admin-section-card
+                  .admin-section-card__header.admin-section-card__header--split
+                    .admin-section-card__header-left
+                      .admin-section-card__icon
+                        svg(aria-hidden='true')
+                          use(xlink:href='/img/icons.svg#icon-compass')
+                      div
+                        h3.admin-section-card__title Itinerary Locations & Stops
+                        p.admin-section-card__subtitle Display and modify intermediate stops across Tunisia with scheduled days
+                    button.btn.btn--small.btn--green(type='button', data-add-stop)
+                      svg.btn__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-plus')
+                      span Add Stop
+
+                  .admin-section-card__body
+                    .admin-stops-list(data-stops-container)
+                      if tour && tour.locations && tour.locations.length
+                        each stop, index in tour.locations
+                          .admin-stop-card(data-stop-card)
+                            .admin-stop-card__header
+                              span.admin-stop-badge Stop #{index + 1}
+                              button.admin-stop-remove(type='button', aria-label='Remove stop', data-remove-stop) &times;
+                            .form__row.form__row--2
+                              .form__group
+                                label.form__label Day of Tour #[span.form__required *]
+                                input.form__input(
+                                  type='number',
+                                  min='1',
+                                  value=stop.day || (index + 1),
+                                  placeholder='Day e.g. 1',
+                                  required,
+                                  data-stop-day
+                                )
+                              .form__group
+                                label.form__label Stop Name / Description #[span.form__required *]
+                                input.form__input(
+                                  type='text',
+                                  value=stop.description || '',
+                                  placeholder='e.g. El Jem Amphitheatre',
+                                  required,
+                                  data-stop-desc
+                                )
+                            .form__row.form__row--2
+                              .form__group
+                                label.form__label Coordinates (Lng, Lat) #[span.form__required *]
+                                .admin-input-with-button
+                                  input.form__input(
+                                    type='text',
+                                    value= (stop.coordinates && stop.coordinates.length) ? stop.coordinates.join(', ') : '',
+                                    placeholder='e.g. 10.7069, 35.2965',
+                                    required,
+                                    data-stop-coords
+                                  )
+                                  button.btn.btn--small.btn--outline(type='button', data-open-map-picker='stop', title='Pick on Tunisia Map')
+                                    svg.btn__icon(aria-hidden='true')
+                                      use(xlink:href='/img/icons.svg#icon-map')
+                                    span Map
+                              .form__group
+                                label.form__label Address / Landmark
+                                input.form__input(
+                                  type='text',
+                                  value=stop.address || '',
+                                  placeholder='e.g. Rue Ali Belhouane, El Jem',
+                                  data-stop-addr
+                                )
+                      else
+                        p.admin-stops-empty(data-stops-empty) No itinerary stops added yet. Click "+ Add Stop" above or pick locations from the Tunisia map.
+
+                //- 4. Guide Assignments
+                section.admin-section-card
+                  .admin-section-card__header
+                    .admin-section-card__icon
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-users')
+                    h3.admin-section-card__title Assigned Tour Guides
+                  .admin-section-card__body
+                    if guideOptions.length
+                      .admin-guides-grid
+                        each guide in guideOptions
+                          label.admin-guide-card
+                            input(
+                              type='checkbox',
+                              name='guides',
+                              value=guide._id,
+                              checked= selectedGuideIds.includes(guide._id.toString())
+                            )
+                            .admin-guide-card__inner
+                              img.admin-guide-card__avatar(src=`/img/users/${guide.photo || 'default.jpg'}`, alt=guide.name)
+                              .admin-guide-card__info
+                                span.admin-guide-card__name= guide.name
+                                span.admin-badge.admin-badge--sm(class= guide.role === 'lead-guide' ? 'admin-badge--lead' : 'admin-badge--guide')= guide.role === 'lead-guide' ? 'Lead Guide' : 'Tour Guide'
+                    else
+                      p.form__hint No guide profiles found in the system.
+
+              //- Right Column: Pricing, Capacity, Visibility, Media
+              .admin-editor-side
+                //- 5. Pricing & Logistics
+                section.admin-section-card
+                  .admin-section-card__header
+                    .admin-section-card__icon
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-tag')
+                    h3.admin-section-card__title Pricing & Logistics
+                  .admin-section-card__body
+                    .form__row.form__row--2
+                      .form__group
+                        label.form__label(for='tour-price') Regular Price (TND) #[span.form__required *]
+                        input#tour-price.form__input(
+                          type='number',
+                          name='price',
+                          step='0.01',
+                          min='0',
+                          value= tour ? tour.price : '',
+                          placeholder='e.g. 1200',
+                          required,
+                          data-price-input
+                        )
+                      .form__group
+                        label.form__label(for='tour-priceDiscount') Discounted Price (TND)
+                        input#tour-priceDiscount.form__input(
+                          type='number',
+                          name='priceDiscount',
+                          step='0.01',
+                          min='0',
+                          value= (tour && tour.priceDiscount) ? tour.priceDiscount : '',
+                          placeholder='Must be below regular price',
+                          data-discount-input
+                        )
+
+                    //- Secret Tour Toggle
+                    .form__group
+                      label.admin-checkbox-label
+                        input(type='checkbox', name='secretTour', value='true', checked= (tour && tour.secretTour))
+                        span.admin-checkbox-custom
+                        span.admin-checkbox-text Mark as Secret Tour (VIP Only)
+                      p.form__hint When checked, this tour is hidden from the public explore page and only accessible by administrators and assigned staff.
+
+                //- 6. Cover & Gallery Images
+                section.admin-section-card
+                  .admin-section-card__header
+                    .admin-section-card__icon
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-image')
+                    h3.admin-section-card__title Media & Photography
+                  .admin-section-card__body
+                    //- Cover Image
+                    .form__group
+                      label.form__label(for='tour-imageCover')
+                        | Cover Image
+                        if !tour
+                          span.form__required  *
+                      .admin-dropzone(data-dropzone='cover')
+                        input#tour-imageCover.admin-dropzone__input(
+                          type='file',
+                          name='imageCover',
+                          accept='image/jpeg,image/png,image/webp',
+                          required= !tour,
+                          data-cover-input
+                        )
+                        .admin-dropzone__content
+                          svg.admin-dropzone__icon(aria-hidden='true')
+                            use(xlink:href='/img/icons.svg#icon-upload-cloud')
+                          span.admin-dropzone__text Click or drop image to upload cover
+                          small.admin-dropzone__sub JPEG, PNG, or WebP (Max 5 MB)
+
+                      .admin-preview-box(data-cover-preview-box, class= (tour && tour.imageCover) ? '' : 'is-hidden')
+                        span.admin-preview-box__tag Current Cover
+                        img.admin-preview-box__img(
+                          src= (tour && tour.imageCover) ? `/img/tours/${tour.imageCover}` : '',
+                          alt='Cover Preview',
+                          data-cover-preview-img
+                        )
+                        span.admin-preview-box__filename(data-cover-filename)= tour && tour.imageCover ? tour.imageCover : ''
+
+                    //- Gallery Images
+                    .form__group
+                      label.form__label(for='tour-images') Gallery Images (Up to 3)
+                      .admin-dropzone(data-dropzone='gallery')
+                        input#tour-images.admin-dropzone__input(
+                          type='file',
+                          name='images',
+                          accept='image/jpeg,image/png,image/webp',
+                          multiple,
+                          data-gallery-input
+                        )
+                        .admin-dropzone__content
+                          svg.admin-dropzone__icon(aria-hidden='true')
+                            use(xlink:href='/img/icons.svg#icon-images')
+                          span.admin-dropzone__text Select up to 3 gallery photos
+                          small.admin-dropzone__sub Will replace existing gallery images
+
+                      .admin-gallery-preview-grid(data-gallery-preview-grid)
+                        if tour && tour.images && tour.images.length
+                          each imgFile in tour.images
+                            .admin-preview-item
+                              img(src=`/img/tours/${imgFile}`, alt='Gallery image')
+                              span.admin-preview-item__name= imgFile
+
+            //- Sticky Form Actions Bar
+            .admin-form-actions-bar
+              .admin-form-actions-bar__left
+                a.btn.btn--white.btn--small(href='/manage/tours') Cancel & Back
+              .admin-form-actions-bar__status
+                p.form__message(data-tour-message, role='status', aria-live='polite')
+              .admin-form-actions-bar__right
+                button.btn.btn--green.btn--small(type='submit', data-tour-submit)
+                  svg.btn__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-check')
+                  span= mode === 'edit' ? 'Save Tour Changes' : 'Publish New Tour'
+
+    //- Mapbox Tunisia Location Picker Modal
+    dialog.admin-map-dialog(data-map-picker-dialog)
+      .admin-map-dialog__content
+        .admin-map-dialog__header
+          .admin-map-dialog__title-wrap
+            h3.admin-map-dialog__title Tunisia Location Picker (Mapbox)
+            p.admin-map-dialog__subtitle Search with autocomplete or drag the marker across Tunisia
+          button.admin-map-dialog__close(type='button', aria-label='Close map picker', data-close-map-picker) &times;
+
+        .admin-map-dialog__search-bar
+          .admin-map-search-wrap
+            svg.admin-map-search-icon(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-search')
+            input.form__input.admin-map-search-input(
+              type='search',
+              placeholder='Search city, landmark, or street in Tunisia (e.g. Carthage, Sidi Bou Said, Tozeur)...',
+              autocomplete='off',
+              data-map-search-input
+            )
+            button.admin-map-search-clear.is-hidden(type='button', aria-label='Clear search', data-clear-search) &times;
+          ul.admin-map-suggestions.is-hidden(data-map-suggestions, role='listbox')
+
+        .admin-map-dialog__body
+          #map-picker-canvas.admin-map-canvas
+          .admin-map-overlay-instructions
+            span 📍 Drag pin or click anywhere in Tunisia to pinpoint coordinates
+
+        .admin-map-dialog__footer
+          .admin-map-selection-info
+            span.admin-map-selection-name(data-picker-selected-name) Tunis, Tunisia
+            span.admin-map-selection-coords(data-picker-selected-coords) Lng: 10.1815 | Lat: 36.8065
+          .admin-map-dialog__actions
+            button.btn.btn--white.btn--small(type='button', data-close-map-picker) Cancel
+            button.btn.btn--green.btn--small(type='button', data-confirm-map-picker)
+              svg.btn__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-check')
+              span Apply Selected Location
+
+    //- Floating Toast Notification Area
+    .admin-toast-container(data-toast-container, role='status', aria-live='polite')
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
+
+    script(src='/js/auth.js', defer)
+    script(src='/js/tourManagement.js', defer)

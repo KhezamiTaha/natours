@@ -1,0 +1,198 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='https://fonts.googleapis.com/css?family=Lato:300,300i,700', rel='stylesheet')
+    link(rel='stylesheet', href='/css/style.css')
+    link(rel='shortcut icon', type='image/png', href='/img/favicon.png')
+    title CarthageWay | #{title}
+  body.my-bookings-page
+    header.header
+      nav.nav.nav--tours(aria-label='Main navigation')
+        a.nav__el(href='/') All tours
+      a.header__logo(href='/', aria-label='CarthageWay home')
+        img(src='/img/logo-white.png', alt='CarthageWay logo')
+      nav.nav.nav--user(aria-label='Account navigation')
+        a.nav__el.nav__el--bookings(href='/my-bookings', aria-current='page') My bookings
+        if currentUser.role === 'admin' || currentUser.role === 'lead-guide'
+          a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+            svg.nav__manage-icon(aria-hidden='true')
+              use(xlink:href='/img/icons.svg#icon-settings')
+            span.nav__manage-label Manage tours
+        details.nav-account-menu(data-account-menu)
+          summary.nav-account-menu__trigger
+            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+            span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+            span.nav-account-menu__caret(aria-hidden='true')
+          .nav-account-menu__dropdown
+            a.nav-account-menu__item(href='/me') Profile
+            a.nav-account-menu__item(href='/my-bookings') My bookings
+            button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+        span.sr-only(data-auth-status, role='status', aria-live='polite')
+
+    main.my-bookings
+      .my-bookings__container
+        header.my-bookings__header
+          .my-bookings__header-copy
+            p.my-bookings__eyebrow Travel Dashboard
+            h1.heading-secondary My Expeditions & Bookings
+            p.my-bookings__subhead Track your upcoming itineraries, view booking vouchers, and relive past adventures across Tunisia.
+
+          if bookings.length
+            - const now = Date.now()
+            - const upcomingBookings = bookings.filter((b) => new Date(b.departureDate).getTime() > now && b.status === 'confirmed')
+            - const totalTravelers = bookings.reduce((sum, b) => sum + (b.travelerCount || 1), 0)
+
+            .my-bookings__stats
+              .stat-card
+                .stat-card__icon-box
+                  svg.stat-card__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-compass')
+                .stat-card__content
+                  span.stat-card__label Total Trips
+                  strong.stat-card__val= bookings.length
+              .stat-card
+                .stat-card__icon-box.stat-card__icon-box--green
+                  svg.stat-card__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-calendar')
+                .stat-card__content
+                  span.stat-card__label Upcoming
+                  strong.stat-card__val= upcomingBookings.length
+              .stat-card
+                .stat-card__icon-box.stat-card__icon-box--gold
+                  svg.stat-card__icon(aria-hidden='true')
+                    use(xlink:href='/img/icons.svg#icon-users')
+                .stat-card__content
+                  span.stat-card__label Travelers
+                  strong.stat-card__val= totalTravelers
+
+        if bookings.length
+          .my-bookings__toolbar
+            .my-bookings__filters(role='tablist', aria-label='Filter bookings')
+              button.filter-tab.filter-tab--active(type='button', data-filter='all')
+                span All Trips
+                span.filter-tab__count= bookings.length
+              button.filter-tab(type='button', data-filter='upcoming')
+                span Upcoming
+                span.filter-tab__count= upcomingBookings.length
+              button.filter-tab(type='button', data-filter='completed')
+                span Completed
+              button.filter-tab(type='button', data-filter='cancelled')
+                span Cancelled
+
+          .bookings-grid(data-bookings-grid)
+            each booking in bookings
+              - const depTime = new Date(booking.departureDate).getTime()
+              - const isFuture = depTime > Date.now()
+              - const daysUntil = Math.ceil((depTime - Date.now()) / (1000 * 60 * 60 * 24))
+              - const filterCategory = booking.status === 'cancelled' || booking.status === 'expired' ? 'cancelled' : isFuture ? 'upcoming' : 'completed'
+
+              article.my-booking-card(data-booking-category=filterCategory)
+                .my-booking-card__media
+                  if booking.tour && booking.tour.imageCover
+                    img.my-booking-card__img(src=`/img/tours/${booking.tour.imageCover}`, alt=booking.tour.name)
+                  else
+                    .my-booking-card__placeholder
+                      svg(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-map')
+                  
+                  .my-booking-card__badges
+                    if booking.tour && booking.tour.duration
+                      span.media-badge.media-badge--duration= `${booking.tour.duration} Days`
+                    if booking.tour && booking.tour.difficulty
+                      span.media-badge.media-badge--difficulty(class=`media-badge--${booking.tour.difficulty}`)= booking.tour.difficulty
+                  
+                  if booking.status === 'confirmed'
+                    if isFuture
+                      span.countdown-badge(class=daysUntil <= 3 ? 'countdown-badge--urgent' : '')= daysUntil === 1 ? 'Departing tomorrow!' : `In ${daysUntil} days`
+                    else
+                      span.countdown-badge.countdown-badge--past Past Expedition
+                  else if booking.status === 'pending'
+                    span.countdown-badge.countdown-badge--pending Awaiting Confirmation
+                  else
+                    span.countdown-badge.countdown-badge--cancelled Cancelled
+
+                .my-booking-card__content
+                  .my-booking-card__header
+                    span.my-booking-card__ref= `#CW-${booking._id.toString().toUpperCase().slice(-8)}`
+                    span.booking-status-tag(class=`booking-status-tag--${booking.status}`)= booking.status === 'confirmed' ? '● Confirmed & Paid' : booking.status === 'pending' ? '● Pending' : '● Cancelled'
+
+                  h2.my-booking-card__title
+                    if booking.tour
+                      a(href=`/tour/${booking.tour.slug}`)= booking.tour.name
+                    else
+                      span Tour information unavailable
+
+                  if booking.tour && booking.tour.startLocation
+                    p.my-booking-card__location
+                      svg.my-booking-card__pin-icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-map-pin')
+                      span= booking.tour.startLocation.description || booking.tour.startLocation.address || 'Tunisia'
+
+                  .my-booking-card__specs
+                    .card-spec
+                      svg.card-spec__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-calendar')
+                      div
+                        span.card-spec__label Departure
+                        strong.card-spec__val= booking.departureDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    .card-spec
+                      svg.card-spec__icon(aria-hidden='true')
+                        use(xlink:href='/img/icons.svg#icon-users')
+                      div
+                        span.card-spec__label Travelers
+                        strong.card-spec__val= `${booking.travelerCount} ${booking.travelerCount === 1 ? 'Guest' : 'Guests'}`
+
+                  .my-booking-card__footer
+                    .my-booking-card__price-box
+                      span.my-booking-card__price-label Total Paid
+                      strong.my-booking-card__price-val= new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(booking.totalAmountCents / 100)
+
+                    .my-booking-card__actions
+                      if booking.tour
+                        a.btn.btn--green.btn--small(href=`/tour/${booking.tour.slug}`) View Tour Itinerary
+                      if booking.status === 'confirmed'
+                        a.btn.btn--secondary.btn--small(href=`/booking/success?session_id=${booking.stripeCheckoutSessionId}`) View Receipt
+        else
+          .my-bookings__empty-state
+            .empty-state__icon-wrap
+              svg.empty-state__icon(aria-hidden='true')
+                use(xlink:href='/img/icons.svg#icon-compass')
+            h2.empty-state__title No Travel Bookings Yet
+            p.empty-state__text Your Tunisian adventure is waiting! From the ancient amphitheater of El Jem to the golden dunes of Douz, explore our hand-crafted guided tours and book your journey with ease.
+            a.btn.btn--green.btn--large(href='/') Discover Guided Tours &rarr;
+
+    footer.footer
+      .footer__logo
+        img(src='/img/logo-green.png', alt='CarthageWay logo')
+      ul.footer__nav
+        li: a(href='#') About us
+        li: a(href='#') Download apps
+        li: a(href='#') Become a guide
+        li: a(href='#') Careers
+        li: a(href='#') Contact
+      p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
+
+    script(src='/js/auth.js', defer)
+    script.
+      document.addEventListener('DOMContentLoaded', () => {
+        const tabs = document.querySelectorAll('[data-filter]');
+        const cards = document.querySelectorAll('[data-booking-category]');
+
+        tabs.forEach((tab) => {
+          tab.addEventListener('click', () => {
+            const filter = tab.dataset.filter;
+            tabs.forEach((t) => t.classList.remove('filter-tab--active'));
+            tab.classList.add('filter-tab--active');
+
+            cards.forEach((card) => {
+              if (filter === 'all' || card.dataset.bookingCategory === filter) {
+                card.style.display = 'grid';
+              } else {
+                card.style.display = 'none';
+              }
+            });
+          });
+        });
+      });

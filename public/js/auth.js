@@ -22,6 +22,28 @@ const setButtonLoading = (button, isLoading, label) => {
    }
 };
 
+const getSafeRedirectUrl = () => {
+   const requestedUrl = new URLSearchParams(
+      window.location.search,
+   ).get('redirect');
+
+   if (
+      !requestedUrl ||
+      !requestedUrl.startsWith('/') ||
+      requestedUrl.startsWith('//')
+   ) {
+      return '/';
+   }
+
+   try {
+      const parsedUrl = new URL(requestedUrl, window.location.origin);
+      if (parsedUrl.origin !== window.location.origin) return '/';
+      return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+   } catch (error) {
+      return '/';
+   }
+};
+
 const handleSubmit = async (event) => {
    event.preventDefault();
 
@@ -79,10 +101,7 @@ const handleSubmit = async (event) => {
       showMessage(form, successMessage, false);
       isRedirecting = true;
 
-      const redirectUrl =
-         new URLSearchParams(window.location.search).get(
-            'redirect',
-         ) || '/';
+      const redirectUrl = getSafeRedirectUrl();
 
       window.setTimeout(() => {
          window.location.assign(redirectUrl);
@@ -103,13 +122,32 @@ forms.forEach((form) => {
    form.addEventListener('submit', handleSubmit);
 });
 
+const accountMenus = document.querySelectorAll('[data-account-menu]');
+
+document.addEventListener('click', (event) => {
+   accountMenus.forEach((menu) => {
+      if (!menu.contains(event.target)) menu.open = false;
+   });
+});
+
+document.addEventListener('keydown', (event) => {
+   if (event.key !== 'Escape') return;
+
+   accountMenus.forEach((menu) => {
+      if (!menu.open) return;
+      menu.open = false;
+      menu.querySelector('summary').focus();
+   });
+});
+
 const logoutButtons = document.querySelectorAll('[data-auth-logout]');
 
 logoutButtons.forEach((button) => {
    button.addEventListener('click', async () => {
-      const status = button.parentElement.querySelector(
-         '[data-auth-status]',
-      );
+      const status = button
+         .closest('.nav--user')
+         ?.querySelector('[data-auth-status]');
+      button.closest('[data-account-menu]')?.removeAttribute('open');
       setButtonLoading(button, true, 'Logging out');
       if (status) status.textContent = 'Signing you out...';
 

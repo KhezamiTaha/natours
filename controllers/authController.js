@@ -6,6 +6,14 @@ const crypto = require('crypto');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 
+const getPublicBaseUrl = () => {
+   const baseUrl = new URL(process.env.PASSWORD_RESET_URL);
+   if (!['http:', 'https:'].includes(baseUrl.protocol)) {
+      throw new Error('PASSWORD_RESET_URL must use HTTP or HTTPS.');
+   }
+   return baseUrl;
+};
+
 const signToken = (id) =>
    jwt.sign({ id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN,
@@ -33,7 +41,7 @@ const createSendToken = (
    res.cookie('jwt', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
       maxAge: getCookieMaxAge(),
    });
@@ -54,7 +62,7 @@ exports.logout = (req, res) => {
    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
    };
 
    res.clearCookie('jwt', { ...cookieOptions, path: '/' });
@@ -172,19 +180,41 @@ exports.restrictTo =
       next();
    };
 
-exports.signup = catchAsync((req, res, next) => {
+exports.signup = catchAsync(async (req, res) => {
    const { name, email, password, passwordConfirm, role } = req.body;
 
-   return User.create({
+   const newUser = await User.create({
       name,
       email,
       password,
       passwordConfirm,
       role,
-   }).then((newUser) => {
-      newUser.password = undefined;
-      createSendToken(newUser, 201, res);
    });
+
+   try {
+      const homeUrl = getPublicBaseUrl().origin;
+      await sendEmail({
+         email: newUser.email,
+         subject: 'Welcome to CarthageWay',
+         template: 'welcome',
+         templateData: {
+            name: newUser.name,
+            homeUrl,
+            loginUrl: `${homeUrl}/login`,
+            preheader: 'Your CarthageWay account is ready.',
+         },
+         text: `Welcome to CarthageWay, ${newUser.name}. Your account is ready. Sign in at ${homeUrl}/login.`,
+      });
+   } catch (error) {
+      console.error('Welcome email delivery failed.', {
+         code: error.code || 'EMAIL_SEND_FAILED',
+         providerCode: error.providerCode,
+         statusCode: error.statusCode,
+      });
+   }
+
+   newUser.password = undefined;
+   createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -270,15 +300,28 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
    user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
    await user.save({ validateBeforeSave: false });
 
-   const resetURL = `${process.env.PASSWORD_RESET_URL}/${resetToken}`;
-
    try {
+      const resetBaseUrl = getPublicBaseUrl();
+      const resetURL = `${resetBaseUrl.href.replace(/\/+$/, '')}/${resetToken}`;
       await sendEmail({
          email: user.email,
-         subject: 'Your password reset token (valid for 10 minutes)',
-         message: `Forgot your password? Submit a PATCH request to ${resetURL} with your new password and passwordConfirm.`,
+         subject: 'Reset your CarthageWay password',
+         template: 'passwordReset',
+         templateData: {
+            name: user.name,
+            homeUrl: resetBaseUrl.origin,
+            resetUrl: resetURL,
+            preheader:
+               'A password reset was requested for your account.',
+         },
+         text: `Hello ${user.name}, use this link to reset your CarthageWay password: ${resetURL}. The link expires in 10 minutes. If you did not request this, ignore this email.`,
       });
    } catch (error) {
+      console.error('Password reset email delivery failed.', {
+         code: error.code || 'EMAIL_SEND_FAILED',
+         providerCode: error.providerCode,
+         statusCode: error.statusCode,
+      });
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save({ validateBeforeSave: false });
