@@ -185,7 +185,9 @@ tourSchema.post('save', function (document, next) {
 //
 
 tourSchema.pre(/^find/, function (next) {
-   this.find({ secretTour: { $ne: true } });
+   if (!this.getOptions().includeSecret) {
+      this.find({ secretTour: { $ne: true } });
+   }
    next();
 });
 
@@ -199,6 +201,10 @@ tourSchema.pre(/^find/, function (next) {
 // });
 
 tourSchema.pre('aggregate', function (next) {
+   if (this.options && this.options.includeSecret) {
+      return next();
+   }
+
    const pipeline = this.pipeline();
    const geoNearStage = pipeline[0] && pipeline[0].$geoNear;
 

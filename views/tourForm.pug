@@ -11,18 +11,25 @@ html(lang='en')
     title CarthageWay | #{title}
 
   body
-    header.header
+    header.header.header--admin
       nav.nav.nav--tours
         a.nav__el(href='/') All tours
-        a.nav__el(href='/manage/tours') Manage tours
       a.header__logo(href='/', aria-label='CarthageWay home')
         img(src='/img/logo-white.png', alt='CarthageWay logo')
       nav.nav.nav--user
-        a.nav__el.nav__el--profile(href='/me')
-          img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
-          span.nav__user-name= currentUser.name
-        button.nav__el(type='button', data-auth-logout) Log out
-        span(data-auth-status, role='status', aria-live='polite')
+        a.nav__el.nav__el--manage(href='/manage/tours', aria-label='Manage tours')
+          svg.nav__manage-icon(aria-hidden='true')
+            use(xlink:href='/img/icons.svg#icon-settings')
+          span.nav__manage-label Manage tours
+        details.nav-account-menu(data-account-menu)
+          summary.nav-account-menu__trigger
+            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+            span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+            span.nav-account-menu__caret(aria-hidden='true')
+          .nav-account-menu__dropdown
+            a.nav-account-menu__item(href='/me') Profile
+            button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+          span.sr-only(data-auth-status, role='status', aria-live='polite')
 
     main.main
       .user-view.admin-view
@@ -328,7 +335,7 @@ html(lang='en')
                   .admin-section-card__body
                     .form__row.form__row--2
                       .form__group
-                        label.form__label(for='tour-price') Regular Price (TND) #[span.form__required *]
+                        label.form__label(for='tour-price') Regular Price (EUR) #[span.form__required *]
                         input#tour-price.form__input(
                           type='number',
                           name='price',
@@ -340,7 +347,7 @@ html(lang='en')
                           data-price-input
                         )
                       .form__group
-                        label.form__label(for='tour-priceDiscount') Discounted Price (TND)
+                        label.form__label(for='tour-priceDiscount') Discounted Price (EUR)
                         input#tour-priceDiscount.form__input(
                           type='number',
                           name='priceDiscount',

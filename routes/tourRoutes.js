@@ -2,6 +2,7 @@ const express = require('express');
 const tourController = require('../controllers/tourController');
 const authController = require('../controllers/authController');
 const reviewRouter = require('./reviewRoutes');
+const uploadTourImages = require('../utils/uploadTourImages');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.use('/:tourID/reviews', reviewRouter);
 router.param('id', (req, res, next, value) => {
    console.log(`Tour id is ${value}`);
    next();
-});
+}); 
 
 router.route('/tours-statistics').get(tourController.toursStatistics);
 router
@@ -21,6 +22,14 @@ router
 router
    .route('/trending-tours')
    .get(tourController.getTrendingTours, tourController.getAllTours);
+
+router
+   .route('/manage')
+   .get(
+      authController.protect,
+      authController.restrictTo('admin', 'lead-guide'),
+      tourController.getAllToursManaged,
+   );
 
 router
    .route('/getDistances/:latlng/unit/:unit')
@@ -36,7 +45,16 @@ router
    .post(
       authController.protect,
       authController.restrictTo('admin', 'lead-guide'),
+      uploadTourImages,
       tourController.createTour,
+   );
+
+router
+   .route('/:id/manage')
+   .get(
+      authController.protect,
+      authController.restrictTo('admin', 'lead-guide'),
+      tourController.getOneTourManaged,
    );
 
 router
@@ -45,6 +63,7 @@ router
    .patch(
       authController.protect,
       authController.restrictTo('admin', 'lead-guide'),
+      uploadTourImages,
       tourController.updateTour,
    )
    .delete(

@@ -50,7 +50,7 @@ module.exports = function errorController(err, req, res, next) {
       if (err.isOperational) {
          return res.status(err.statusCode).json({
             status: err.status,
-            message: '🫏🔥 - ' + err.message,
+            message: err.message,
          });
       }
       // Programming errors

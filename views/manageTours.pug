@@ -9,18 +9,25 @@ html(lang='en')
     title CarthageWay | #{title}
 
   body
-    header.header
+    header.header.header--admin
       nav.nav.nav--tours
         a.nav__el(href='/') All tours
-        a.nav__el(href='/manage/tours', aria-current='page') Manage tours
       a.header__logo(href='/', aria-label='CarthageWay home')
         img(src='/img/logo-white.png', alt='CarthageWay logo')
       nav.nav.nav--user
-        a.nav__el.nav__el--profile(href='/me')
-          img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt=`${currentUser.name} profile photo`)
-          span.nav__user-name= currentUser.name
-        button.nav__el(type='button', data-auth-logout) Log out
-        span(data-auth-status, role='status', aria-live='polite')
+        a.nav__el.nav__el--manage(href='/manage/tours', aria-current='page', aria-label='Manage tours')
+          svg.nav__manage-icon(aria-hidden='true')
+            use(xlink:href='/img/icons.svg#icon-settings')
+          span.nav__manage-label Manage tours
+        details.nav-account-menu(data-account-menu)
+          summary.nav-account-menu__trigger
+            img.nav__user-img(src=`/img/users/${currentUser.photo}`, alt='')
+            span.nav__user-name= currentUser.name.trim().split(/\s+/)[0]
+            span.nav-account-menu__caret(aria-hidden='true')
+          .nav-account-menu__dropdown
+            a.nav-account-menu__item(href='/me') Profile
+            button.nav-account-menu__item.nav-account-menu__logout(type='button', data-auth-logout) Log out
+          span.sr-only(data-auth-status, role='status', aria-live='polite')
 
     main.main
       .user-view.admin-view
@@ -114,7 +121,7 @@ html(lang='en')
                 .admin-kpi-card__icon.admin-kpi-card__icon--blue
                   svg(aria-hidden='true')
                     use(xlink:href='/img/icons.svg#icon-tag')
-              .admin-kpi-card__value #{stats.avgPrice.toLocaleString()} TND
+              .admin-kpi-card__value #{stats.avgPrice.toLocaleString()} EUR
               .admin-kpi-card__footer Base package price
 
             .admin-kpi-card
@@ -291,10 +298,10 @@ html(lang='en')
 
                     .admin-card__pricing-row
                       .admin-card__price-box
-                        span.admin-card__price-currency TND
-                        span.admin-card__price-amount= tour.price.toLocaleString()
+                        span.admin-card__price-currency EUR
+                        span.admin-card__price-amount= (tour.priceDiscount > 0 ? tour.priceDiscount : tour.price).toLocaleString()
                         if tour.priceDiscount
-                          span.admin-card__price-original #{tour.priceDiscount.toLocaleString()} TND
+                          span.admin-card__price-original #{tour.price.toLocaleString()} EUR
                           span.admin-card__discount-pill Discounted
 
                       if tour.guides && tour.guides.length
@@ -305,17 +312,17 @@ html(lang='en')
                             span.admin-card__guide-overflow +#{tour.guides.length - 3}
 
                   .admin-card__actions
-                    a.btn.btn--small.btn--white.admin-card__btn(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='Preview Public Tour')
+                    a.btn.btn--white.admin-card__btn.admin-card__btn--view(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='Preview Public Tour')
                       svg.btn__icon(aria-hidden='true')
                         use(xlink:href='/img/icons.svg#icon-eye')
                       span View
 
-                    a.btn.btn--small.btn--green.admin-card__btn(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour Details')
+                    a.btn.btn--green.admin-card__btn.admin-card__btn--edit(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour Details')
                       svg.btn__icon(aria-hidden='true')
                         use(xlink:href='/img/icons.svg#icon-edit')
                       span Edit
 
-                    button.btn.btn--small.btn--red.admin-card__btn(
+                    button.btn.btn--red.admin-card__btn.admin-card__btn--delete(
                       type='button',
                       data-delete-modal-trigger,
                       data-tour-id=tour._id,
@@ -378,9 +385,9 @@ html(lang='en')
 
                       td
                         .admin-table__price-cell
-                          span.admin-table__price-main #{tour.price.toLocaleString()} TND
+                          span.admin-table__price-main #{(tour.priceDiscount > 0 ? tour.priceDiscount : tour.price).toLocaleString()} EUR
                           if tour.priceDiscount
-                            small.admin-table__price-discount #{tour.priceDiscount.toLocaleString()} TND
+                            small.admin-table__price-discount #{tour.price.toLocaleString()} EUR
 
                       td
                         .admin-table__rating
@@ -399,10 +406,10 @@ html(lang='en')
 
                       td.right
                         .admin-table__actions
-                          a.admin-icon-btn(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='View Public Page')
+                          a.admin-icon-btn.admin-icon-btn--view(href=`/tour/${tour.slug}`, target='_blank', rel='noopener noreferrer', title='View Public Page', aria-label=`View ${tour.name}`)
                             svg(aria-hidden='true')
                               use(xlink:href='/img/icons.svg#icon-external-link')
-                          a.admin-icon-btn.admin-icon-btn--edit(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour')
+                          a.admin-icon-btn.admin-icon-btn--edit(href=`/manage/tours/${tour._id}/edit`, title='Edit Tour', aria-label=`Edit ${tour.name}`)
                             svg(aria-hidden='true')
                               use(xlink:href='/img/icons.svg#icon-edit')
                           button.admin-icon-btn.admin-icon-btn--delete(
@@ -411,7 +418,8 @@ html(lang='en')
                             data-tour-id=tour._id,
                             data-tour-name=tour.name,
                             data-tour-cover=tour.imageCover,
-                            title='Delete Tour'
+                            title='Delete Tour',
+                            aria-label=`Delete ${tour.name}`
                           )
                             svg(aria-hidden='true')
                               use(xlink:href='/img/icons.svg#icon-trash-2')

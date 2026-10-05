@@ -7535,14 +7535,6 @@ body {
   box-shadow: 0 0 0 3px rgba(85, 197, 122, 0.22);
   transform: translateY(0);
 }
-.custom-sort-dropdown__trigger-icon {
-  width: 1.6rem;
-  height: 1.6rem;
-  stroke: #28b487;
-  stroke-width: 2.2;
-  fill: none;
-  flex-shrink: 0;
-}
 .custom-sort-dropdown__trigger-text {
   color: #153e32;
   font-weight: 800;

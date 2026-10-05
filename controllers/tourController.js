@@ -93,7 +93,7 @@ const writeTourImage = async (file, variant = 'cover') => {
 };
 
 const processUploadedTourImages = async (req) => {
-   const body = { ...req.body };
+   const body = {};
    const uploadedFiles = req.files || {};
 
    if (uploadedFiles.imageCover && uploadedFiles.imageCover[0]) {
@@ -146,8 +146,15 @@ const parseLatLng = (latlng) => {
    return [longitude, latitude];
 };
 
-const parseGeoCoordinates = (rawCoords, defaultCoords = [10.1815, 36.8065]) => {
-   if (rawCoords === null || rawCoords === undefined || rawCoords === '') {
+const parseGeoCoordinates = (
+   rawCoords,
+   defaultCoords = [10.1815, 36.8065],
+) => {
+   if (
+      rawCoords === null ||
+      rawCoords === undefined ||
+      rawCoords === ''
+   ) {
       return defaultCoords;
    }
 
@@ -422,41 +429,69 @@ const normalizeTourPayload = (payload) => {
       normalized.maxGroupSize = Number(normalized.maxGroupSize);
    }
 
-   const hasFlatStart =
-      normalized['startLocation[description]'] !== undefined ||
-      normalized['startLocation[address]'] !== undefined ||
-      normalized['startLocation[coordinates]'] !== undefined;
+   if (
+      typeof normalized.startLocation === 'string' &&
+      normalized.startLocation.trim()
+   ) {
+      try {
+         normalized.startLocation = JSON.parse(
+            normalized.startLocation,
+         );
+      } catch {}
+   }
 
-   const hasNestedStart =
-      normalized.startLocation !== undefined &&
-      typeof normalized.startLocation === 'object' &&
-      normalized.startLocation !== null;
+   const startDesc =
+      normalized['startLocation[description]'] !== undefined
+         ? normalized['startLocation[description]']
+         : normalized['startLocation.description'] !== undefined
+           ? normalized['startLocation.description']
+           : normalized.startLocation &&
+               typeof normalized.startLocation === 'object'
+             ? normalized.startLocation.description
+             : undefined;
 
-   if (hasFlatStart || hasNestedStart) {
-      const startDesc =
-         normalized['startLocation[description]'] !== undefined
-            ? normalized['startLocation[description]']
-            : (normalized.startLocation && normalized.startLocation.description);
+   const startAddr =
+      normalized['startLocation[address]'] !== undefined
+         ? normalized['startLocation[address]']
+         : normalized['startLocation.address'] !== undefined
+           ? normalized['startLocation.address']
+           : normalized.startLocation &&
+               typeof normalized.startLocation === 'object'
+             ? normalized.startLocation.address
+             : undefined;
 
-      const startAddr =
-         normalized['startLocation[address]'] !== undefined
-            ? normalized['startLocation[address]']
-            : (normalized.startLocation && normalized.startLocation.address);
+   const startCoords =
+      normalized['startLocation[coordinates]'] !== undefined
+         ? normalized['startLocation[coordinates]']
+         : normalized['startLocation.coordinates'] !== undefined
+           ? normalized['startLocation.coordinates']
+           : normalized.startLocation &&
+               typeof normalized.startLocation === 'object'
+             ? normalized.startLocation.coordinates
+             : undefined;
 
-      const startCoords =
-         normalized['startLocation[coordinates]'] !== undefined
-            ? normalized['startLocation[coordinates]']
-            : (normalized.startLocation && normalized.startLocation.coordinates);
+   const hasStartLocation =
+      startDesc !== undefined ||
+      startAddr !== undefined ||
+      startCoords !== undefined ||
+      normalized.startLocation !== undefined;
 
+   if (hasStartLocation) {
       delete normalized['startLocation[description]'];
       delete normalized['startLocation[address]'];
       delete normalized['startLocation[coordinates]'];
+      delete normalized['startLocation.description'];
+      delete normalized['startLocation.address'];
+      delete normalized['startLocation.coordinates'];
 
       normalized.startLocation = {
          type: 'Point',
          description: String(startDesc || '').trim() || 'Tunisia',
          address: String(startAddr || '').trim(),
-         coordinates: parseGeoCoordinates(startCoords, [10.1815, 36.8065]),
+         coordinates: parseGeoCoordinates(
+            startCoords,
+            [10.1815, 36.8065],
+         ),
       };
    }
 
@@ -477,8 +512,13 @@ const normalizeTourPayload = (payload) => {
 
                return {
                   type: 'Point',
-                  coordinates: parseGeoCoordinates(loc.coordinates, [10.1815, 36.8065]),
-                  description: String(loc.description || '').trim() || 'Itinerary Stop',
+                  coordinates: parseGeoCoordinates(
+                     loc.coordinates,
+                     [10.1815, 36.8065],
+                  ),
+                  description:
+                     String(loc.description || '').trim() ||
+                     'Itinerary Stop',
                   address: String(loc.address || '').trim(),
                   day: Math.max(1, Number(loc.day) || 1),
                };
