@@ -10,7 +10,9 @@ const cookieParser = require('cookie-parser');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
+const bookingController = require('./controllers/bookingController');
 const AppError = require('./utils/appError');
 const errorController = require('./controllers/errorController');
 const { globalLimiter } = require('./utils/rateLimiter');
@@ -48,12 +50,18 @@ app.use(
       },
    }),
 );
+app.use('/api', globalLimiter);
+app.post(
+   '/api/v1/bookings/webhook',
+   express.raw({ type: 'application/json' }),
+   bookingController.handleStripeWebhook,
+);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 app.use(cookieParser());
-app.use('/api', globalLimiter);
 
 // middleware for static files
 
@@ -79,6 +87,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 app.use('/', viewRouter);
 
 app.all('*', (req, res, next) => {

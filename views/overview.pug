@@ -128,8 +128,6 @@ html(lang='en')
             span.sort-label Sort by:
             .custom-sort-dropdown(data-sort-dropdown)
               button.custom-sort-dropdown__trigger(type='button', aria-haspopup='listbox', aria-expanded='false', data-sort-trigger)
-                svg.custom-sort-dropdown__trigger-icon(aria-hidden='true')
-                  use(xlink:href='/img/icons.svg#icon-sliders')
                 span.custom-sort-dropdown__trigger-text(data-sort-selected-label)= activeSortObj.label
                 svg.custom-sort-dropdown__caret(aria-hidden='true')
                   use(xlink:href='/img/icons.svg#icon-chevron-down')
@@ -235,4 +233,4 @@ html(lang='en')
       p.footer__copyright &copy; by #[strong Taha Khezami]. All rights reserved.
 
     script(src='/js/auth.js', defer)
-    script(src='/js/overview.js', defer)
+    script(src='/js/sortDropdown.js', defer)

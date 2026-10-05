@@ -54,13 +54,30 @@ exports.getAllUsers = catchAsync(async (req, res) => {
    });
 });
 
+exports.getGuideOptions = catchAsync(async (req, res, next) => {
+   const guides = await User.find({
+      active: { $ne: false },
+      role: { $in: ['guide', 'lead-guide'] },
+   })
+      .select('name role photo')
+      .sort('name');
+
+   res.status(200).json({
+      status: 'success',
+      results: guides.length,
+      data: {
+         guides,
+      },
+   });
+});
+
 exports.updateMe = catchAsync(async (req, res, next) => {
    const allowedFields = ['name', 'email'];
    const requestedFields = Object.keys(req.body);
    const invalidFields = requestedFields.filter(
       (field) => !allowedFields.includes(field),
    );
-
+ 
    if (invalidFields.length > 0) {
       return next(
          new AppError(

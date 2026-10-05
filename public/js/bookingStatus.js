@@ -19,13 +19,19 @@ if (copyRefBtn) {
          }
 
          const textSpan = copyRefBtn.querySelector('.copy-btn__text');
-         const originalText = textSpan ? textSpan.textContent : 'Copy';
+         const originalText = textSpan
+            ? textSpan.textContent
+            : 'Copy';
          if (textSpan) textSpan.textContent = 'Copied!';
-         copyRefBtn.classList.add('receipt-details__copy-btn--copied');
+         copyRefBtn.classList.add(
+            'receipt-details__copy-btn--copied',
+         );
 
          setTimeout(() => {
             if (textSpan) textSpan.textContent = originalText;
-            copyRefBtn.classList.remove('receipt-details__copy-btn--copied');
+            copyRefBtn.classList.remove(
+               'receipt-details__copy-btn--copied',
+            );
          }, 2000);
       } catch (err) {
          console.error('Failed to copy reference code:', err);
@@ -57,20 +63,28 @@ if (bookingStatus) {
          if (result.data && result.data.status === 'confirmed') {
             bookingStatus.textContent =
                'Your payment is confirmed! Your booking is ready in My Bookings.';
-            
+
             // Update title and status pill live
-            const titleEl = document.querySelector('.booking-result__title');
+            const titleEl = document.querySelector(
+               '.booking-result__title',
+            );
             if (titleEl) titleEl.textContent = 'Booking Confirmed!';
 
-            const statusPill = document.querySelector('.receipt-status-pill');
+            const statusPill = document.querySelector(
+               '.receipt-status-pill',
+            );
             if (statusPill) {
                statusPill.textContent = '● Confirmed & Paid';
-               statusPill.className = 'receipt-status-pill receipt-status-pill--confirmed';
+               statusPill.className =
+                  'receipt-status-pill receipt-status-pill--confirmed';
             }
             return;
          }
 
-         if (result.data && ['cancelled', 'expired'].includes(result.data.status)) {
+         if (
+            result.data &&
+            ['cancelled', 'expired'].includes(result.data.status)
+         ) {
             bookingStatus.textContent =
                'Payment was not completed. You can start a new booking from the tour page.';
             return;

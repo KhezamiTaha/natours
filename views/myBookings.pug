@@ -33,6 +33,9 @@ html(lang='en')
 
     main.my-bookings
       .my-bookings__container
+        - const now = Date.now()
+        - const upcomingBookings = bookings.filter((booking) => new Date(booking.departureDate).getTime() > now && booking.status === 'confirmed')
+        - const totalTravelers = bookings.reduce((sum, booking) => sum + (booking.travelerCount || 1), 0)
         header.my-bookings__header
           .my-bookings__header-copy
             p.my-bookings__eyebrow Travel Dashboard
@@ -40,10 +43,6 @@ html(lang='en')
             p.my-bookings__subhead Track your upcoming itineraries, view booking vouchers, and relive past adventures across Tunisia.
 
           if bookings.length
-            - const now = Date.now()
-            - const upcomingBookings = bookings.filter((b) => new Date(b.departureDate).getTime() > now && b.status === 'confirmed')
-            - const totalTravelers = bookings.reduce((sum, b) => sum + (b.travelerCount || 1), 0)
-
             .my-bookings__stats
               .stat-card
                 .stat-card__icon-box
