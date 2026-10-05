@@ -793,7 +793,14 @@ EMAIL_FROM="CarthageWay <noreply@your-verified-domain.com>"
 
 # Public password reset page; the one-time token is appended by the server
 PASSWORD_RESET_URL=http://localhost:7000/reset-password
+
+# Restricted public token for Mapbox maps and geocoding
+MAPBOX_PUBLIC_TOKEN=your_restricted_mapbox_public_token
 ```
+
+Map views and the tour editor's location picker use `MAPBOX_PUBLIC_TOKEN`.
+Use a restricted public Mapbox token; do not put Mapbox credentials directly
+in client-side JavaScript or commit them to source control.
 
 In development, set `EMAIL_PROVIDER=resend` to test with Resend instead of
 Mailtrap. The default `RESEND_FROM=onboarding@resend.dev` can only send to the
